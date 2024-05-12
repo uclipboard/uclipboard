@@ -21,7 +21,7 @@ func (WL *WlClipboard) Copy(s string) error {
 }
 
 func (WL *WlClipboard) Paste() (string, error) {
-	pasteCmd := exec.Command("wl-paste")
+	pasteCmd := exec.Command("wl-paste", "-n")
 	var out bytes.Buffer
 	pasteCmd.Stdout = &out
 
