@@ -17,8 +17,10 @@ func Run(c *model.Conf) {
 	switch c.Client.Adapter {
 	case "wl":
 		clipboardAdapter = adapter.NewWl()
+	case "xc":
+		clipboardAdapter = adapter.NewXClip()
 	default:
-		// X win MacOS(pbcopy/paste)
+		// win MacOS(pbcopy/paste)
 		panic(model.ErrUnimplement)
 	}
 	client := &http.Client{}
@@ -39,7 +41,7 @@ func Instant(c *model.Conf) {
 
 		if len(in) != 0 {
 			// upload stdin data
-			reqBody := GenClipboardReqBody(string(in))
+			reqBody, _ := GenClipboardReqBody(string(in))
 			resp, err := client.Post(model.UrlPushApi(c),
 				"application/json", bytes.NewReader(reqBody))
 
@@ -54,7 +56,7 @@ func Instant(c *model.Conf) {
 		}
 	} else if argMsg != "" {
 		// uplad argument msg
-		reqBody := GenClipboardReqBody(argMsg)
+		reqBody, _ := GenClipboardReqBody(argMsg)
 		resp, err := client.Post(model.UrlPushApi(c),
 			"application/json", bytes.NewReader(reqBody))
 

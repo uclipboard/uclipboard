@@ -8,7 +8,7 @@ import (
 	"github.com/dangjinghao/uclipboard/model"
 )
 
-func GenClipboardReqBody(c string) []byte {
+func GenClipboardReqBody(c string) ([]byte, *model.Clipboard) {
 	reqData := model.NewClipoardWithDefault()
 	reqData.Content = c
 	hostname, err := os.Hostname()
@@ -22,5 +22,5 @@ func GenClipboardReqBody(c string) []byte {
 	if err != nil {
 		panic(err)
 	}
-	return reqBody
+	return reqBody, reqData
 }

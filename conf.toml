@@ -6,3 +6,4 @@ adapter = "wl" #necessary
 interval = 2000 #ms
 
 [server]
+history_size = 5

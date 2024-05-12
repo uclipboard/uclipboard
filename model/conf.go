@@ -15,7 +15,8 @@ type Conf struct {
 	} `toml:"client"`
 
 	Server struct {
-		DBPath string `toml:"db_path"`
+		DBPath      string `toml:"db_path"`
+		HistorySize int    `toml:"history_size"`
 	} `toml:"server"`
 
 	// passed by arguments
@@ -36,6 +37,7 @@ func NewConfWithDefault() *Conf {
 	c := Conf{}
 	c.Client.Connect = "http"
 	c.Client.Interval = 1000
+	c.Server.HistorySize = 5
 	c.Server.DBPath = "./uclipboard.db"
 	return &c
 }

@@ -7,7 +7,9 @@ This is a cross-platform clipboard client/server
 ## Client 
 ### Platform
 - Windows
-- Linux
+- [x] Linux(X/xclip)
+- [x] Linux(wayland/wl-clipboard)
+
 - Mac OS X (fulture)
 
 ### How to impl

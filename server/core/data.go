@@ -26,7 +26,7 @@ var (
 	(:ts,:content,:hostname,:content_type)
 	`, clipboard_table_name)
 	getLatestClipboard = fmt.Sprintf(`select * from %s
-	order by id desc limit 1`, clipboard_table_name)
+	order by id desc limit `, clipboard_table_name) + "%d"  //format limit N support
 )
 
 func InitDB(c *model.Conf) {
@@ -40,7 +40,7 @@ func AddClipboardRecord(c *model.Clipboard) (err error) {
 	return
 }
 
-func GetLatestClipboardRecord(c *model.Clipboard) (err error) {
-	err = DB.Get(c, getLatestClipboard)
+func GetLatestClipboardRecord(c *[]model.Clipboard, N int) (err error) {
+	err = DB.Select(c, fmt.Sprintf(getLatestClipboard, N))
 	return
 }
