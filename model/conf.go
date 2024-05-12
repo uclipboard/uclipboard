@@ -1,32 +1,54 @@
 package model
 
 import (
-	"log"
+	"os"
 
-	"github.com/go-ini/ini"
+	"github.com/pelletier/go-toml/v2"
 )
 
 type Conf struct {
-	Client_ServerUrl string
-	Client_Connect   string
-	Client_Adapter   string
-	Client_Interval  int
+	Client struct {
+		ServerUrl string `toml:"server_url"`
+		Connect   string `toml:"connect"`
+		Adapter   string `toml:"adapter"`
+		Interval  int    `toml:"interval"`
+	} `toml:"client"`
+
+	Server struct {
+		DBPath string `toml:"db_path"`
+	} `toml:"server"`
+
+	// passed by arguments
+	Run struct {
+		Mode     string
+		ConfPath string
+		Debug    bool
+		Msg      string
+	}
 }
 
-func LoadConf(path string) *Conf {
-	cfg, err := ini.Load(path)
-	if err != nil {
-		log.Fatal("Loading config error:", err)
-	}
-	serverUrl := cfg.Section("client").Key("server_url").MustString("http://localhost:4700")
-	connect := cfg.Section("client").Key("connect").MustString("http")
-	adapter := cfg.Section("client").Key("adapter").MustString("wl")
-	interval := cfg.Section("client").Key("interval").MustInt(1000)
+// Why go-toml? because gin need it!
+// Default tag is not supported by go-toml now,so I have to implement this
+func NewConfWithDefault() *Conf {
+	// I want to implement this by reflect and chain calling
+	// What a pity! it is too hard to resolve nest structure
+	// in a simple function.
+	c := Conf{}
+	c.Client.Connect = "http"
+	c.Client.Interval = 1000
+	c.Server.DBPath = "./uclipboard.db"
+	return &c
+}
 
-	return &Conf{
-		Client_ServerUrl: serverUrl,
-		Client_Connect:   connect,
-		Client_Adapter:   adapter,
-		Client_Interval:  interval,
+func LoadConf(conf *Conf) *Conf {
+	content, err := os.ReadFile(conf.Run.ConfPath)
+	if err != nil {
+		panic(err)
 	}
+	err = toml.Unmarshal(content, conf)
+	if err != nil {
+		panic(err)
+	}
+
+	return conf
 }

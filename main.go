@@ -8,28 +8,25 @@ import (
 	"github.com/dangjinghao/uclipboard/server"
 )
 
-var (
-	runMode   string
-	confPath  string
-	debugMode bool
-	msg       string
-)
-
 func main() {
-
-	flag.StringVar(&runMode, "mode", "server", "Specify the running mode. (client|server|instant)")
-	flag.StringVar(&confPath, "conf", "./conf.ini", "Specify the config path.")
-	flag.StringVar(&msg, "msg", "", "(instant mode) push/pull clipboard data instantly.")
-	flag.BoolVar(&debugMode, "debug", false, "print debug message")
+	// create default config struct
+	conf := model.NewConfWithDefault()
+	// modify the `run` config struct
+	flag.StringVar(&conf.Run.Mode, "mode", "server", "Specify the running mode. (client|server|instant)")
+	flag.StringVar(&conf.Run.ConfPath, "conf", "./conf.toml", "Specify the config path.")
+	flag.StringVar(&conf.Run.Msg, "msg", "", "(instant mode) push/pull clipboard data instantly.")
+	flag.BoolVar(&conf.Run.Debug, "debug", false, "print debug message")
 	flag.Parse()
-	conf := model.LoadConf(confPath)
-	switch runMode {
+	// modify config struct by conf file
+	conf = model.LoadConf(conf)
+
+	switch conf.Run.Mode {
 	case "server":
 		server.Run(conf)
 	case "client":
 		client.Run(conf)
 	case "instant":
-		client.Instant(conf, msg)
+		client.Instant(conf)
 	default:
 		panic(model.ErrUnimplement)
 	}

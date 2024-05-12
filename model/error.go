@@ -7,7 +7,8 @@ import (
 // TODO: custom errors
 var (
 	ErrUnimplement = errors.New("unimplement")
-	ErrChanClosed  = errors.New("this channel should not be closed")
+	ErrOpenFailed  = errors.New("open file failed")
+	ErrSetDefault  = errors.New("canot set the default value")
 )
 
 var (

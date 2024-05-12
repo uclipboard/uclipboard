@@ -1,8 +1,10 @@
 package client
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 
 	"github.com/dangjinghao/uclipboard/client/adapter"
@@ -12,19 +14,21 @@ import (
 func Run(c *model.Conf) {
 	var clipboardAdapter model.ClipboardCmdAdapter
 
-	switch c.Client_Adapter {
+	switch c.Client.Adapter {
 	case "wl":
 		clipboardAdapter = adapter.NewWl()
 	default:
 		// X win MacOS(pbcopy/paste)
 		panic(model.ErrUnimplement)
 	}
-
-	mainLoop(c, clipboardAdapter)
+	client := &http.Client{}
+	mainLoop(c, clipboardAdapter, client)
 }
 
-func Instant(c *model.Conf, argMsg string) {
+func Instant(c *model.Conf) {
+	client := &http.Client{}
 
+	argMsg := c.Run.Msg
 	// TODO:Support binary file uploading
 	// priority: argument message > stdin > download
 	if argMsg == "" {
@@ -34,16 +38,30 @@ func Instant(c *model.Conf, argMsg string) {
 		}
 
 		if len(in) != 0 {
-			fmt.Println("upload stdin data:" + string(in))
+			// upload stdin data
+			reqBody := GenClipboardReqBody(string(in))
+			resp, err := client.Post(model.UrlPushApi(c),
+				"application/json", bytes.NewReader(reqBody))
+
+			if err != nil {
+				panic(err)
+			}
+			defer resp.Body.Close()
+
 		} else {
-			fmt.Println("nothing")
+			fmt.Println("nothing readed")
 			os.Exit(1)
 		}
 	} else if argMsg != "" {
-		fmt.Println("upload argMsg data:" + string(argMsg))
-	} else {
-		fmt.Println("download data!")
+		// uplad argument msg
+		reqBody := GenClipboardReqBody(argMsg)
+		resp, err := client.Post(model.UrlPushApi(c),
+			"application/json", bytes.NewReader(reqBody))
 
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
 	}
 
 }

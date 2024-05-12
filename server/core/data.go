@@ -4,73 +4,43 @@ import (
 	"fmt"
 
 	"github.com/dangjinghao/uclipboard/model"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// ServerClipboard maintained by a coroutine named `ClipboardManager`
-var serverData struct {
-	actionChannel chan *model.ActionChannelItem
-	clipboard     []model.ClipboardItem
+var DB *sqlx.DB
+
+var (
+	clipboard_table_name = "clipboard_data"
+	schema               = fmt.Sprintf(`CREATE TABLE if not exists %s (
+		id integer primary key autoincrement,
+		ts bigint not null,
+		content text,
+		hostname varchar(128) default 'unknown',
+		content_type varchar(128) default 'text'
+		);
+	`, clipboard_table_name)
+
+	insertClipboard = fmt.Sprintf(`insert into %s 
+	(ts,content,hostname,content_type) values
+	(:ts,:content,:hostname,:content_type)
+	`, clipboard_table_name)
+	getLatestClipboard = fmt.Sprintf(`select * from %s
+	order by id desc limit 1`, clipboard_table_name)
+)
+
+func InitDB(c *model.Conf) {
+	DB = sqlx.MustConnect("sqlite3", c.Server.DBPath)
+	DB.MustExec(schema)
+
 }
 
-// The Data returned  to gin request goroutine by ClipboardManager
-var returnChannel chan *model.ReturnChannelItem
-
-func pushClipboard(i *model.ClipboardItem) {
-	serverData.clipboard = append(serverData.clipboard, *i)
+func AddClipboardRecord(c *model.Clipboard) (err error) {
+	_, err = DB.NamedExec(insertClipboard, c)
+	return
 }
 
-func pullClipboard(n int) []model.ClipboardItem {
-	// FIXME: empty in the initial
-	return serverData.clipboard[len(serverData.clipboard)-n:]
-}
-func managerPushClipboard(act *model.ActionChannelItem) {
-	ret := model.NewReturnChannelItem()
-	ret.Ctx = act.Ctx
-	pushClipboard(&act.Clipboard)
-	returnChannel <- ret
-
-}
-
-func mamangerPullClipboard(act *model.ActionChannelItem) {
-	ret := model.NewReturnChannelItem()
-	ret.Ctx = act.Ctx
-	ret.Clipboard = pullClipboard(1)[0]
-	returnChannel <- ret
-}
-
-func clipboardManager() {
-	for {
-		act, open := <-serverData.actionChannel
-		if !open {
-			panic(model.ErrChanClosed)
-		}
-		switch act.Act {
-		case model.ActCmdPushClipboard:
-			managerPushClipboard(act)
-
-		case model.ActCmdPullClipboard:
-			mamangerPullClipboard(act)
-		case model.ActCmdRemoveClipboard:
-			fmt.Println("act remove!")
-		}
-	}
-}
-
-func PushActionChan(d *model.ActionChannelItem) {
-	serverData.actionChannel <- d
-}
-
-func PullFromReturnChan() *model.ReturnChannelItem {
-	d, ok := <-returnChannel
-	if !ok {
-		panic(model.ErrChanClosed)
-	}
-	return d
-}
-
-func init() {
-	returnChannel = make(chan *model.ReturnChannelItem)
-	serverData.actionChannel = make(chan *model.ActionChannelItem)
-	serverData.clipboard = make([]model.ClipboardItem, 0)
-	go clipboardManager()
+func GetLatestClipboardRecord(c *model.Clipboard) (err error) {
+	err = DB.Get(c, getLatestClipboard)
+	return
 }

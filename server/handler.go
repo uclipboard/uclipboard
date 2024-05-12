@@ -7,31 +7,23 @@ import (
 )
 
 func HandlerPush(ctx *gin.Context) {
-	act := model.NewClipboardAction()
-	act.Act = model.ActCmdPushClipboard
-	act.Ctx = ctx
-	var clipboard model.ClipboardItem
-	if err := ctx.ShouldBindJSON(&clipboard); err != nil {
+	clipboardData := model.NewClipoardWithDefault()
+	if err := ctx.BindJSON(&clipboardData); err != nil {
 		ctx.String(500, err.Error())
 		return
 	}
-
-	act.Clipboard = clipboard
-	core.PushActionChan(act)
-
-	ret := core.PullFromReturnChan()
-	// this ctx maybe not be the previous ctx
-	ret.Ctx.JSON(200, ret.Clipboard)
+	if err := core.AddClipboardRecord(clipboardData); err != nil {
+		ctx.String(500, err.Error())
+		return
+	}
+	ctx.JSON(200, gin.H{"result": "ok"})
 }
 func HandlerPull(ctx *gin.Context) {
-	act := model.NewClipboardAction()
-	act.Act = model.ActCmdPullClipboard
-	act.Ctx = ctx
-
-	core.PushActionChan(act)
-	ret := core.PullFromReturnChan()
-	ret.Ctx.JSON(200, ret.Clipboard)
-
+	clipboardData := model.NewClipoardWithDefault()
+	if err := core.GetLatestClipboardRecord(clipboardData); err != nil {
+		ctx.String(500, err.Error())
+	}
+	ctx.JSON(200, clipboardData)
 }
 func HandlerHistory(ctx *gin.Context) {
 }

@@ -1,52 +1,14 @@
 package model
 
-import (
-	"reflect"
-
-	"github.com/gin-gonic/gin"
-)
-
-type ClipboardItem struct {
-	No           uint64 //should be empty when push clipboard item
-	Ts           uint64 `json:"ts"` //ms timestamp
-	Content      string `json:"content"`
-	FromHostname string `json:"hostname"` // sender
+type Clipboard struct {
+	Id          int64  `json:"-" db:"id"`
+	Ts          int64  `json:"ts" db:"ts"` //ms timestamp
+	Content     string `json:"content" db:"content"`
+	Hostname    string `json:"hostname" db:"hostname"`         // sender
+	ContentType string `json:"content_type" db:"content_type"` //
 }
 
-// Thoese action command is used to ask ClipboardManager to do sth
-const (
-	ActCmdPushClipboard int = iota
-	ActCmdPushManyClipboards
-	ActCmdRemoveClipboard
-	ActCmdPullClipboard
-)
-
-// Used to commucation between gin serve goroutine and ClipboardManager goroutine
-type ActionChannelItem struct {
-	Act       int
-	Clipboard ClipboardItem
-	Ctx       *gin.Context
-}
-
-type ReturnChannelItem struct {
-	Err       error
-	Clipboard ClipboardItem
-	Ctx       *gin.Context
-}
-
-func (cbi *ClipboardItem) Cmp(another *ClipboardItem) bool {
-	return reflect.DeepEqual(cbi, another)
-}
-
-func NewClipoardItem() *ClipboardItem {
-	return &ClipboardItem{}
-}
-
-func NewClipboardAction() *ActionChannelItem {
-
-	return &ActionChannelItem{}
-}
-
-func NewReturnChannelItem() *ReturnChannelItem {
-	return &ReturnChannelItem{}
+func NewClipoardWithDefault() *Clipboard {
+	// I don't know why it doesn't support default value
+	return &Clipboard{Hostname: "unknown", ContentType: "text"}
 }

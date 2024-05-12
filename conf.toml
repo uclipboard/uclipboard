@@ -1,0 +1,8 @@
+
+[client]
+server_url = "http://localhost:8080" #necessary
+# connect = "ws" 
+adapter = "wl" #necessary
+interval = 2000 #ms
+
+[server]
