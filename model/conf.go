@@ -25,6 +25,7 @@ type Conf struct {
 		ConfPath string
 		LogInfo  string
 		Msg      string
+		Pull     bool
 	}
 }
 

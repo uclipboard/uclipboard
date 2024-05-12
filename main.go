@@ -13,10 +13,11 @@ func main() {
 	conf := model.NewConfWithDefault()
 	// modify the `run` config struct
 	flag.StringVar(&conf.Run.Mode, "mode", "instant", "Specify the running mode. (client|server|instant)")
-	flag.StringVar(&conf.Run.ConfPath, "conf", "./conf.toml", "Specify the config path.")
-	flag.StringVar(&conf.Run.Msg, "msg", "", "(instant mode) push/pull clipboard data instantly.")
-
 	flag.StringVar(&conf.Run.LogInfo, "log-info", "info", "logger info [info/debug/trace]")
+	flag.StringVar(&conf.Run.ConfPath, "conf", "./conf.toml", "Specify the config path.")
+	flag.StringVar(&conf.Run.Msg, "msg", "", "(instant mode) push clipboard data instantly.")
+	flag.BoolVar(&conf.Run.Pull, "pull", false, "(instant mode) pull clipboard data instantly.")
+
 	flag.Parse()
 	model.LoggerInit(conf.Run.LogInfo)
 

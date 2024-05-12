@@ -1,35 +1,31 @@
 # uClipboard
 This is a cross-platform clipboard client/server
 
-**Still working...**
+**Still developing...**
 
 # Plan
 ## Client 
 ### Platform
-- Windows
+- [ ] Windows(A win-clipboard)
 - [x] Linux(X/xclip)
 - [x] Linux(wayland/wl-clipboard)
-
-- Mac OS X (fulture)
-
-### How to impl
-- Golang 
-- clipboard polling checker (easy and cross-platform)
+- [ ] Android APK
+- [ ] Mac OS X (fulture)
 
 ## Server
 ### Platform
 - Same as before 
 ### How to impl
 - Golang
-- HTTP API
+- [x] HTTP API
 - WS API (fulture)
 
-## Uniform Application
+## Single Application
 Single app to implement both client and server
 
-## TODO
+## TODOLIST
+- [x] Hostname source support
 - Authentication(randomly password generator)
-- Hostname source support
 - Web UI
 ## Bug/Feature
-In instant mode, you are not allowed to push clipboard cotent with "" (empty string but specific `-m ""` argument)
+In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
