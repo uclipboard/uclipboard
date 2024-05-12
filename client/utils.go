@@ -1,12 +1,17 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/dangjinghao/uclipboard/model"
+	"github.com/sirupsen/logrus"
 )
+
+var logger *logrus.Entry
 
 func GenClipboardReqBody(c string) ([]byte, *model.Clipboard) {
 	reqData := model.NewClipoardWithDefault()
@@ -20,7 +25,18 @@ func GenClipboardReqBody(c string) ([]byte, *model.Clipboard) {
 	reqData.Ts = time.Now().Unix()
 	reqBody, err := json.Marshal(reqData)
 	if err != nil {
-		panic(err)
+		logger.Panicf("parse response jsonbody error: %s", err.Error())
 	}
 	return reqBody, reqData
+}
+
+func UploadStringData(s string, client *http.Client, c *model.Conf) {
+	reqBody, _ := GenClipboardReqBody(s)
+	resp, err := client.Post(model.UrlPushApi(c),
+		"application/json", bytes.NewReader(reqBody))
+
+	if err != nil {
+		logger.Panic("upload")
+	}
+	defer resp.Body.Close()
 }

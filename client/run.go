@@ -1,8 +1,6 @@
 package client
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -13,7 +11,7 @@ import (
 
 func Run(c *model.Conf) {
 	var clipboardAdapter model.ClipboardCmdAdapter
-
+	logger = model.NewModuleLogger("client")
 	switch c.Client.Adapter {
 	case "wl":
 		clipboardAdapter = adapter.NewWl()
@@ -21,10 +19,10 @@ func Run(c *model.Conf) {
 		clipboardAdapter = adapter.NewXClip()
 	default:
 		// win MacOS(pbcopy/paste)
-		panic(model.ErrUnimplement)
+		logger.Panic("error unknown clipboard adapter")
 	}
 	client := &http.Client{}
-	mainLoop(c, clipboardAdapter, client)
+	mainLoop(c, clipboardAdapter, client, logger)
 }
 
 func Instant(c *model.Conf) {
@@ -32,38 +30,21 @@ func Instant(c *model.Conf) {
 
 	argMsg := c.Run.Msg
 	// TODO:Support binary file uploading
-	// priority: argument message > stdin > download
+	// priority: argument message > stdin
 	if argMsg == "" {
 		in, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			panic("read data from stdin error:" + err.Error())
+			logger.Panicf("Read data from stdin error: %s", err.Error())
 		}
 
 		if len(in) != 0 {
-			// upload stdin data
-			reqBody, _ := GenClipboardReqBody(string(in))
-			resp, err := client.Post(model.UrlPushApi(c),
-				"application/json", bytes.NewReader(reqBody))
-
-			if err != nil {
-				panic(err)
-			}
-			defer resp.Body.Close()
-
+			UploadStringData(string(in), client, c)
 		} else {
-			fmt.Println("nothing readed")
+			logger.Warn("nothing readed")
 			os.Exit(1)
 		}
 	} else if argMsg != "" {
-		// uplad argument msg
-		reqBody, _ := GenClipboardReqBody(argMsg)
-		resp, err := client.Post(model.UrlPushApi(c),
-			"application/json", bytes.NewReader(reqBody))
-
-		if err != nil {
-			panic(err)
-		}
-		defer resp.Body.Close()
+		UploadStringData(argMsg, client, c)
 	}
 
 }

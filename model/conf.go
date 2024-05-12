@@ -23,7 +23,7 @@ type Conf struct {
 	Run struct {
 		Mode     string
 		ConfPath string
-		Debug    bool
+		LogInfo  string
 		Msg      string
 	}
 }
@@ -43,13 +43,14 @@ func NewConfWithDefault() *Conf {
 }
 
 func LoadConf(conf *Conf) *Conf {
+	logger := NewModuleLogger("config_loader")
 	content, err := os.ReadFile(conf.Run.ConfPath)
 	if err != nil {
-		panic(err)
+		logger.Fatalf("Can't load config file: %s", err.Error())
 	}
 	err = toml.Unmarshal(content, conf)
 	if err != nil {
-		panic(err)
+		logger.Fatalf("Can't parse config file: %s", err.Error())
 	}
 
 	return conf

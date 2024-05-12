@@ -12,13 +12,19 @@ func main() {
 	// create default config struct
 	conf := model.NewConfWithDefault()
 	// modify the `run` config struct
-	flag.StringVar(&conf.Run.Mode, "mode", "server", "Specify the running mode. (client|server|instant)")
+	flag.StringVar(&conf.Run.Mode, "mode", "instant", "Specify the running mode. (client|server|instant)")
 	flag.StringVar(&conf.Run.ConfPath, "conf", "./conf.toml", "Specify the config path.")
 	flag.StringVar(&conf.Run.Msg, "msg", "", "(instant mode) push/pull clipboard data instantly.")
-	flag.BoolVar(&conf.Run.Debug, "debug", false, "print debug message")
+
+	flag.StringVar(&conf.Run.LogInfo, "log-info", "info", "logger info [info/debug/trace]")
 	flag.Parse()
+	model.LoggerInit(conf.Run.LogInfo)
+
+	logger := model.NewModuleLogger("entry")
+
 	// modify config struct by conf file
 	conf = model.LoadConf(conf)
+	logger.Debugf("conf.Run.Mode= %s", conf.Run.Mode)
 
 	switch conf.Run.Mode {
 	case "server":
@@ -28,6 +34,6 @@ func main() {
 	case "instant":
 		client.Instant(conf)
 	default:
-		panic(model.ErrUnimplement)
+		logger.Fatal("unknown running mod!")
 	}
 }
