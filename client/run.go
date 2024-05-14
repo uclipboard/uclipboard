@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -18,6 +19,8 @@ func Run(c *model.Conf) {
 		clipboardAdapter = adapter.NewWl()
 	case "xc":
 		clipboardAdapter = adapter.NewXClip()
+	case "wc":
+		clipboardAdapter = adapter.NewWinClip()
 	default:
 		// win MacOS(pbcopy/paste)
 		logger.Panic("error unknown clipboard adapter")
@@ -36,13 +39,14 @@ func Instant(c *model.Conf) {
 		var clipboardArr []model.Clipboard
 		resp, err := PullStringData(client, c, logger)
 		if err != nil {
-			return
+			logger.Panicf("PullStringData error:%s", err.Error())
 		}
+		logger.Tracef("resp:%s", resp)
 		if err = json.Unmarshal(resp, &clipboardArr); err != nil {
 			logger.Panicf("cannot parse response body: %s", err.Error())
 		}
 
-		print(clipboardArr[0].Content)
+		fmt.Print(clipboardArr[0].Content)
 
 	} else if argMsg == "" {
 		in, err := io.ReadAll(os.Stdin)
