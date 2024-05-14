@@ -15,7 +15,10 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 	var previousClipboard model.Clipboard
 	for {
 		time.Sleep(time.Duration(cfg.Client.Interval) * time.Millisecond) //sleep first to avoid the possible occured error then it skip sleep
-		s, _ := adapter.Paste()
+		s, E := adapter.Paste()
+		if E != nil {
+			logger.Panicf("adapter.Paste error:%v", E)
+		}
 		logger.Tracef("adapter.Paste %v", []byte(s))
 
 		// It's not a good idea to use PullStringData
@@ -40,11 +43,17 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 		previousClipboardHistoryidx := model.IndexClipboardArray(remoteClipboards, &previousClipboard)
 		// now we have previousClipboard, remoteClipboards and current clipboard s
 		//  TODO:in current,we just ignore the conflict when all of those are different
-
-		if previousClipboard.Content == s && previousClipboardHistoryidx > 0 {
-			logger.Debugf("Pull from server: %v", remoteClipboards[0])
+		// why we need `previousClipboardHistoryidx`?
+		// In fulture websocket connection mode, `previousClipboardHistoryidx` stores server pushed from remote server
+		// And it will be used to sync remote data.
+		if previousClipboardHistoryidx > 0 {
+			logger.Debugf("Pull from server: %v[%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
 			previousClipboard = remoteClipboards[0]
-			adapter.Copy(previousClipboard.Content)
+			E := adapter.Copy(previousClipboard.Content)
+			if E != nil {
+				logger.Panicf("adapter.Copy error:%v", E)
+
+			}
 
 		} else if previousClipboard.Content != s && previousClipboardHistoryidx == 0 {
 			logger.Tracef("previousClipboard.Content is %v\n", []byte(previousClipboard.Content))
@@ -67,7 +76,11 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 		} else if previousClipboardHistoryidx == -1 {
 			logger.Info("This is a new client, pulling from server...")
 			previousClipboard = remoteClipboards[0]
-			adapter.Copy(previousClipboard.Content)
+			E := adapter.Copy(previousClipboard.Content)
+			if E != nil {
+				logger.Panicf("adapter.Copy error:%v", E)
+
+			}
 			logger.Tracef("previousClipboard.Content: %s", previousClipboard.Content)
 
 		} else {
