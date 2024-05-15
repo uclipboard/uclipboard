@@ -47,7 +47,9 @@ func ginLoggerMiddle() gin.HandlerFunc {
 
 func Run(c *model.Conf) {
 	core.InitDB(c)
-	switch c.Run.LogInfo {
+	go TimerGC(c)
+
+	switch c.Flags.LogLevel {
 	case "debug":
 		gin.SetMode(gin.DebugMode)
 	case "info":
@@ -64,6 +66,7 @@ func Run(c *model.Conf) {
 		v0.GET(model.Api_Pull, HandlerPull(c))
 		v0.GET(model.Api_History, HandlerHistory)
 		v0.POST(model.Api_Push, HandlerPush(c))
+		v0.POST(model.Api_Upload, HandlerUpload(c))
 	}
 	r.Run()
 }

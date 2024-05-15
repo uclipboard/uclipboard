@@ -6,17 +6,17 @@ This is a cross-platform clipboard client/server
 # Plan
 ## Client 
 ### Platform
-- [x] Windows(A win-clipboard) https://github.com/dangjinghao/win-clip
-- [x] Linux(X/xclip)
-- [x] Linux(wayland/wl-clipboard)
+- [x] Windows (my win-clipboard) https://github.com/dangjinghao/win-clip
+- [x] **Linux**/BSD/Any other go supports platform with X display Protocol(xclip)
+- [x] **Linux**/BSD/Any other go supports platform with Wayland display Protocol(wl-clipboard)
 - [ ] Android APK
-- [ ] Mac OS X (fulture)
-
+- [ ] Chrome OS (fulture)
+- [ ] Mac OS X (fulture / I don't have any Apple device :-( )
+*To now, the tested platforms are Windows and Linux (with X or wayland) I don't have BSD device with disply service*
 ## Server
 ### Platform
 - Same as before 
-### How to impl
-- Golang
+### API supports
 - [x] HTTP API
 - WS API (fulture)
 
@@ -25,7 +25,7 @@ Single app to implement both client and server
 
 ## TODOLIST
 - [x] Hostname source support
-- Authentication(randomly password generator)
-- Web UI
+- [ ] Web UI
+- [ ] Authentication(randomly password generator)
 ## Bug/Feature
 In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)

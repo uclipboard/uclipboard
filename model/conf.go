@@ -16,17 +16,23 @@ type Conf struct {
 	} `toml:"client"`
 
 	Server struct {
-		DBPath      string `toml:"db_path"`
-		HistorySize int    `toml:"history_size"`
+		DBPath          string `toml:"db_path"`
+		PullHistorySize int    `toml:"pull_history_size"`
+		TmpPath         string `toml:"tmp_path"`
+		DefaultFileLife int64  `toml:"default_file_life"`
+		TimerInterval   int    `toml:"timer_interval"`
+		MaxHistorySize  int    `toml:"max_history_size"`
 	} `toml:"server"`
 
-	// passed by arguments
-	Run struct {
+	Flags struct {
 		Mode     string
 		ConfPath string
-		LogInfo  string
+		LogLevel string
 		Msg      string
+		Download string
+		Upload   string
 		Pull     bool
+		Latest   bool
 	}
 }
 
@@ -39,15 +45,18 @@ func NewConfWithDefault() *Conf {
 	c := Conf{}
 	c.Client.Connect = "http"
 	c.Client.Interval = 1000
-	c.Server.HistorySize = 5
+	c.Server.PullHistorySize = 5
 	c.Server.DBPath = "./uclipboard.db"
 	c.Client.XSelection = "clipboard"
+	c.Server.TmpPath = "./tmp/"
+	c.Server.TimerInterval = 60
+	c.Server.DefaultFileLife = 60 * 5
 	return &c
 }
 
 func LoadConf(conf *Conf) *Conf {
 	logger := NewModuleLogger("config_loader")
-	content, err := os.ReadFile(conf.Run.ConfPath)
+	content, err := os.ReadFile(conf.Flags.ConfPath)
 	if err != nil {
 		logger.Fatalf("Can't load config file: %s", err.Error())
 	}

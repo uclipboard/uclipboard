@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 
 	"github.com/dangjinghao/uclipboard/client/adapter"
@@ -25,19 +24,34 @@ func Run(c *model.Conf) {
 		// win MacOS(pbcopy/paste)
 		logger.Panic("error unknown clipboard adapter")
 	}
-	client := &http.Client{}
+	client := newUClipboardHttpClient()
 	mainLoop(c, clipboardAdapter, client)
 }
 
 func Instant(c *model.Conf) {
-	client := &http.Client{}
+	client := newUClipboardHttpClient()
 	logger := model.NewModuleLogger("instant")
-	argMsg := c.Run.Msg
-	// TODO:Support binary file uploading
-	// priority: pull data > argument message > stdin
-	if c.Run.Pull {
+	argMsg := c.Flags.Msg
+	// priority: binary file > pull data > argument message > stdin
+
+	if c.Flags.Upload != "" {
+		uploadFile(c.Flags.Upload, client, c, logger)
+
+	} else if c.Flags.Latest || c.Flags.Download != "" {
+		// var fileName string
+		// if c.Flags.Latest {
+		// 	fileName = ""
+		// } else {
+		// 	fileName = c.Flags.Download
+		// }
+		// resp, err := downloadFile(fileName, client, c, logger)
+		// if err != nil {
+		// 	logger.Panicf("Download file error:%s", err.Error())
+		// }
+		// logger.Tracef("resp: %v", resp)
+	} else if c.Flags.Pull {
 		var clipboardArr []model.Clipboard
-		resp, err := PullStringData(client, c, logger)
+		resp, err := pullStringData(client, c, logger)
 		if err != nil {
 			logger.Panicf("PullStringData error:%s", err.Error())
 		}
@@ -55,13 +69,13 @@ func Instant(c *model.Conf) {
 		}
 
 		if len(in) != 0 {
-			UploadStringData(string(in), client, c, logger)
+			uploadStringData(string(in), client, c, logger)
 		} else {
 			logger.Warn("nothing readed")
 			os.Exit(1)
 		}
 	} else if argMsg != "" {
-		UploadStringData(argMsg, client, c, logger)
+		uploadStringData(argMsg, client, c, logger)
 	}
 
 }

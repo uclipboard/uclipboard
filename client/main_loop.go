@@ -15,11 +15,11 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 	var previousClipboard model.Clipboard
 	for {
 		time.Sleep(time.Duration(cfg.Client.Interval) * time.Millisecond) //sleep first to avoid the possible occured error then it skip sleep
-		s, E := adapter.Paste()
+		currentClipboard, E := adapter.Paste()
 		if E != nil {
 			logger.Panicf("adapter.Paste error:%v", E)
 		}
-		logger.Tracef("adapter.Paste %v", []byte(s))
+		logger.Tracef("adapter.Paste %v", []byte(currentClipboard))
 
 		// It's not a good idea to use PullStringData
 		// because I need the error infomation to skip current look
@@ -41,11 +41,17 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 		}
 
 		previousClipboardHistoryidx := model.IndexClipboardArray(remoteClipboards, &previousClipboard)
-		// now we have previousClipboard, remoteClipboards and current clipboard s
-		//  TODO:in current,we just ignore the conflict when all of those are different
-		// why we need `previousClipboardHistoryidx`?
-		// In fulture websocket connection mode, `previousClipboardreviousClipboardHistoryidx` stores server pushed from remote server
-		// And it will be used to sync remote data.
+		// Now we just ignore the conflict when all of those are different
+		// Why do we need `previousClipboardHistoryidx`?
+		// Consider the following situation
+		// Copy text1 (remote whatever)
+		// Copy text2 (remote text1)
+		// Copy text1 (remote text2)
+		// If there was not previousClipboard we created,
+		// and just check the index of currentClipboard in remoteClipboard.
+		// text2 will be synchronized to adapter again,
+		// but what we need is a new copied text1
+		// even though text1 is same as previous text1
 		if previousClipboardHistoryidx > 0 {
 			logger.Infof("Pull <= %v [%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
 			previousClipboard = remoteClipboards[0]
@@ -55,13 +61,13 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 
 			}
 
-		} else if previousClipboard.Content != s && previousClipboardHistoryidx == 0 {
+		} else if previousClipboard.Content != currentClipboard && previousClipboardHistoryidx == 0 {
 			logger.Tracef("previousClipboard.Content is %v\n", []byte(previousClipboard.Content))
-			logger.Tracef("s is %v\n", []byte(s))
-			logger.Infof("Push => %s", s)
+			logger.Tracef("s is %v\n", []byte(currentClipboard))
+			logger.Infof("Push => %s", currentClipboard)
 			// It's not good idea to use UploadStringData function because I need wrappedClipboard
-			reqBody, wrappedClipboard := GenClipboardReqBody(s, logger)
-			// update current Clipboard
+			reqBody, wrappedClipboard := genClipboardReqBody(currentClipboard, logger)
+			// update Clipboard
 			logger.Tracef("previousClipboard=wrappedClipboard: %v", wrappedClipboard)
 			previousClipboard = *wrappedClipboard
 
