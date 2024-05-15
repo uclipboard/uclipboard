@@ -4,6 +4,6 @@ server_url = "http://localhost:8080" #necessary
 # connect = "ws" 
 adapter = "wl" #necessary
 interval = 2000 #ms
-
+X_selection = "clipboard" 
 [server]
 history_size = 5

@@ -6,7 +6,7 @@ This is a cross-platform clipboard client/server
 # Plan
 ## Client 
 ### Platform
-- [ ] Windows(A win-clipboard)
+- [x] Windows(A win-clipboard) https://github.com/dangjinghao/win-clip
 - [x] Linux(X/xclip)
 - [x] Linux(wayland/wl-clipboard)
 - [ ] Android APK

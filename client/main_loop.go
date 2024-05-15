@@ -44,10 +44,10 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 		// now we have previousClipboard, remoteClipboards and current clipboard s
 		//  TODO:in current,we just ignore the conflict when all of those are different
 		// why we need `previousClipboardHistoryidx`?
-		// In fulture websocket connection mode, `previousClipboardHistoryidx` stores server pushed from remote server
+		// In fulture websocket connection mode, `previousClipboardreviousClipboardHistoryidx` stores server pushed from remote server
 		// And it will be used to sync remote data.
 		if previousClipboardHistoryidx > 0 {
-			logger.Debugf("Pull from server: %v[%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
+			logger.Infof("Pull <= %v [%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
 			previousClipboard = remoteClipboards[0]
 			E := adapter.Copy(previousClipboard.Content)
 			if E != nil {
@@ -58,7 +58,7 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 		} else if previousClipboard.Content != s && previousClipboardHistoryidx == 0 {
 			logger.Tracef("previousClipboard.Content is %v\n", []byte(previousClipboard.Content))
 			logger.Tracef("s is %v\n", []byte(s))
-			logger.Debug("Push clipboard to server and update local previousClipboard")
+			logger.Infof("Push => %s", s)
 			// It's not good idea to use UploadStringData function because I need wrappedClipboard
 			reqBody, wrappedClipboard := GenClipboardReqBody(s, logger)
 			// update current Clipboard
@@ -74,13 +74,15 @@ func mainLoop(cfg *model.Conf, adapter model.ClipboardCmdAdapter, client *http.C
 			resp.Body.Close()
 
 		} else if previousClipboardHistoryidx == -1 {
-			logger.Info("This is a new client, pulling from server...")
 			previousClipboard = remoteClipboards[0]
+			logger.Info("This is a new client, synchronizing from server...")
 			E := adapter.Copy(previousClipboard.Content)
+
 			if E != nil {
 				logger.Panicf("adapter.Copy error:%v", E)
 
 			}
+			logger.Info("synchronize data completed.")
 			logger.Tracef("previousClipboard.Content: %s", previousClipboard.Content)
 
 		} else {

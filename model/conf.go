@@ -8,10 +8,11 @@ import (
 
 type Conf struct {
 	Client struct {
-		ServerUrl string `toml:"server_url"`
-		Connect   string `toml:"connect"`
-		Adapter   string `toml:"adapter"`
-		Interval  int    `toml:"interval"`
+		ServerUrl  string `toml:"server_url"`
+		Connect    string `toml:"connect"`
+		Adapter    string `toml:"adapter"`
+		Interval   int    `toml:"interval"`
+		XSelection string `toml:"X_selection"`
 	} `toml:"client"`
 
 	Server struct {
@@ -40,6 +41,7 @@ func NewConfWithDefault() *Conf {
 	c.Client.Interval = 1000
 	c.Server.HistorySize = 5
 	c.Server.DBPath = "./uclipboard.db"
+	c.Client.XSelection = "clipboard"
 	return &c
 }
 

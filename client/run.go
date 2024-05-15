@@ -18,7 +18,7 @@ func Run(c *model.Conf) {
 	case "wl":
 		clipboardAdapter = adapter.NewWl()
 	case "xc":
-		clipboardAdapter = adapter.NewXClip()
+		clipboardAdapter = adapter.NewXClip(c.Client.XSelection)
 	case "wc":
 		clipboardAdapter = adapter.NewWinClip()
 	default:

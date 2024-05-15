@@ -6,10 +6,11 @@ import (
 )
 
 type XClipClipboard struct {
+	selection string
 }
 
 func (XC *XClipClipboard) Copy(s string) error {
-	copyCmd := exec.Command("xclip", "-selection", "clipboard")
+	copyCmd := exec.Command("xclip", "-selection", XC.selection)
 	copyCmd.Stdin = bytes.NewBufferString(s)
 
 	err := copyCmd.Run()
@@ -21,7 +22,7 @@ func (XC *XClipClipboard) Copy(s string) error {
 }
 
 func (XC *XClipClipboard) Paste() (string, error) {
-	pasteCmd := exec.Command("xclip", "-o")
+	pasteCmd := exec.Command("xclip", "-selection", XC.selection, "-o")
 	var out bytes.Buffer
 	pasteCmd.Stdout = &out
 
@@ -33,6 +34,6 @@ func (XC *XClipClipboard) Paste() (string, error) {
 	return out.String(), nil
 }
 
-func NewXClip() *XClipClipboard {
-	return &XClipClipboard{}
+func NewXClip(selection string) *XClipClipboard {
+	return &XClipClipboard{selection: selection}
 }
