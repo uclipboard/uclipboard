@@ -51,26 +51,25 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		logger.Tracef("fileMetadata: %v", fileMetadata)
 
 		newClipboardRecord := model.NewClipoardWithDefault()
-		// TODO: support hostname
-		// ctx.FormValue("hostname")
-
-		newClipboardRecord.ContentType = file.Header.Get("Content-Type")
-		logger.Tracef("newClipboardRecord.ContentType(raw): %v", newClipboardRecord.ContentType)
-		if newClipboardRecord.ContentType == "" {
-			newClipboardRecord.ContentType = "application/octet-stream"
+		hostname := ctx.Request.Header.Get("hostname")
+		if hostname == "" {
+			hostname = "unknown"
 		}
+		logger.Tracef("uploader's hostname: %s", hostname)
+		newClipboardRecord.Hostname = hostname
+		newClipboardRecord.ContentType = "binary"
+
 		// save file to tmp directory and get the path to save in db
 		filePath := filepath.Join(conf.Server.TmpPath, fileMetadata.TmpPath)
 		newClipboardRecord.Content = filePath
-		logger.Tracef("newClipboardRecord: %v", newClipboardRecord)
-
 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal Error:" + err.Error()})
 			return
 		}
+		logger.Tracef("newClipboardRecord: %v", newClipboardRecord)
 		// FIXME: I don't know, maybe I should use transaction
 		// When one of the following operations fails, the saved file should be deleted
-		// And both of the tables are not synchronized
+		// And at that time, both of the tables are not synchronized
 		if err := core.AddClipboardRecord(newClipboardRecord); err != nil {
 			logger.Tracef("AddClipboardRecord error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal Error:" + err.Error()})
@@ -78,7 +77,6 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		}
 		if err = core.AddFileMetadataRecord(fileMetadata); err != nil {
 			logger.Tracef("AddFileMetadataRecord error: %v", err)
-
 			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal Error:" + err.Error()})
 			return
 		}

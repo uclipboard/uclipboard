@@ -66,7 +66,7 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 		return
 	}
 	defer file.Close()
-
+	// TODO:read file content type
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	part, err := bodyWriter.CreateFormFile("file", file.Name())
@@ -87,10 +87,16 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 	if err != nil {
 		logger.Panicf("NewRequest error: %v", err)
 	}
-
 	fileContentType := bodyWriter.FormDataContentType()
 	req.Header.Set("Content-Type", fileContentType)
 	logger.Tracef("Content-Type: %s", fileContentType)
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Warnf("Get hostname error: %v", err)
+	}
+	// set hostname to header
+	req.Header.Set("Hostname", hostname)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Panicf("Upload file error: %v", err)
