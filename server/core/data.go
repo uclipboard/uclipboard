@@ -52,11 +52,18 @@ var (
 	queryFileMetadataByExpireTs = fmt.Sprintf(`select * from %s
 	where expire_ts < ?
 	`, file_metadata_table_name)
+
+	queryFileMetadataByIdOrName = fmt.Sprintf(`select * from %s
+	where id = ? or file_name = ? order by created_ts desc limit 1 
+	`, file_metadata_table_name)
+	queryFileMetadataLatest = fmt.Sprintf(`select * from %s
+	order by created_ts desc limit 1
+	`, file_metadata_table_name)
 )
 var logger *logrus.Entry
 
 func InitDB(c *model.Conf) {
-	logger = model.NewModuleLogger("InitDB")
+	logger = model.NewModuleLogger("DB")
 	DB = sqlx.MustConnect("sqlite3", c.Server.DBPath)
 	DB.MustExec(clipboard_schema)
 	DB.MustExec(file_metadata_schema)
@@ -76,10 +83,30 @@ func GetLatestClipboardRecord(c *[]model.Clipboard, N int) (err error) {
 	return
 }
 
-func AddFileMetadataRecord(d *model.FileMetadata) (err error) {
-	logger.Tracef("in AddFileMetadataRecord: %v", d)
-	_, err = DB.NamedExec(insertFileMetadata, d)
+// find the latest record
+func GetFileMetadataLatestRecord(d *model.FileMetadata) (err error) {
+	err = DB.Get(d, queryFileMetadataLatest)
 	return
+}
+
+// find the latest record by id or name
+func GetFileMetadataRecordByOrName(d *model.FileMetadata) (err error) {
+	logger.Tracef("GetFileMetadataRecordByOrName: %v", d)
+	err = DB.Get(d, queryFileMetadataByIdOrName, d.Id, d.FileName)
+	return
+}
+
+func AddFileMetadataRecord(d *model.FileMetadata) (fileId int64, err error) {
+	logger.Tracef("in AddFileMetadataRecord: %v", d)
+	result, err := DB.NamedExec(insertFileMetadata, d)
+	if err != nil {
+		return
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return
+	}
+	return id, nil
 }
 
 func DelFileMetadataRecordById(d *model.FileMetadata) (err error) {

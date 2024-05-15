@@ -67,6 +67,7 @@ func Run(c *model.Conf) {
 		v0.GET(model.Api_History, HandlerHistory)
 		v0.POST(model.Api_Push, HandlerPush(c))
 		v0.POST(model.Api_Upload, HandlerUpload(c))
+		v0.GET(model.Api_Download, HandlerDownload(c))
 	}
 	r.Run()
 }

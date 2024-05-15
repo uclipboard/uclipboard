@@ -35,20 +35,19 @@ func Instant(c *model.Conf) {
 	// priority: binary file > pull data > argument message > stdin
 
 	if c.Flags.Upload != "" {
-		uploadFile(c.Flags.Upload, client, c, logger)
+		fmt.Print(uploadFile(c.Flags.Upload, client, c, logger))
 
 	} else if c.Flags.Latest || c.Flags.Download != "" {
-		// var fileName string
-		// if c.Flags.Latest {
-		// 	fileName = ""
-		// } else {
-		// 	fileName = c.Flags.Download
-		// }
-		// resp, err := downloadFile(fileName, client, c, logger)
-		// if err != nil {
-		// 	logger.Panicf("Download file error:%s", err.Error())
-		// }
-		// logger.Tracef("resp: %v", resp)
+		var fileName string
+		if c.Flags.Latest {
+			fileName = ""
+		} else {
+			fileName = c.Flags.Download
+		}
+		downloadFile(fileName, client, c, logger)
+		// panic when download file failed
+		fmt.Printf("Download file success: %s\n", fileName)
+
 	} else if c.Flags.Pull {
 		var clipboardArr []model.Clipboard
 		resp, err := pullStringData(client, c, logger)
@@ -59,8 +58,11 @@ func Instant(c *model.Conf) {
 		if err = json.Unmarshal(resp, &clipboardArr); err != nil {
 			logger.Panicf("cannot parse response body: %s", err.Error())
 		}
-
-		fmt.Print(clipboardArr[0].Content)
+		if clipboardArr[0].ContentType == "binary" {
+			fmt.Print(model.UrlDownloadApi(c, clipboardArr[0].Content))
+		} else {
+			fmt.Print(clipboardArr[0].Content)
+		}
 
 	} else if argMsg == "" {
 		in, err := io.ReadAll(os.Stdin)

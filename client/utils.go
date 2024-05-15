@@ -3,7 +3,9 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -58,12 +60,12 @@ func newUClipboardHttpClient() *http.Client {
 	return &http.Client{}
 }
 
-func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
+func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *logrus.Entry) string {
 	logger.Trace("into UploadFile")
 	file, err := os.Open(filePath)
 	if err != nil {
 		logger.Panicf("Open file error: %v", err)
-		return
+		return ""
 	}
 	defer file.Close()
 	// TODO:read file content type
@@ -107,22 +109,40 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 		logger.Panicf("Read response body error: %v", err)
 	}
 	logger.Tracef("Response body: %s", respBody)
-
+	return string(respBody)
 }
 
-// func downloadFile(fileName string, client *http.Client, c *model.Conf, logger *logrus.Entry) (*http.Response, error) {
-// 	logger.Trace("into DownloadFile")
-// 	var downloadApi string
-// 	if fileName == "" {
-// 		downloadApi = model.UrlLatestApi(c)
-// 	} else {
-// 		downloadApi = model.UrlDownloadApi(c, fileName)
-// 	}
-// 	logger.Tracef("downloadApi:%s", downloadApi)
-// 	resp, err := client.Get(downloadApi)
-// 	if err != nil {
-// 		logger.Warnf("Error sending req: %s", err)
-// 		return nil, err
-// 	}
-// 	return resp, nil
-// }
+func parseContentDisposition(contentDisposition string) string {
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	if err != nil {
+		return ""
+	}
+	return params["filename"]
+}
+
+func downloadFile(fileId string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
+	logger.Trace("into DownloadFile")
+	logger.Tracef("fileId:%s", fileId)
+	downloadUrl := model.UrlDownloadApi(c, fileId)
+	logger.Tracef("downloadApi:%s", downloadUrl)
+	res, err := client.Get(downloadUrl)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		fmt.Printf("Download file failed:%d", res.StatusCode)
+	}
+	contentDisposition := res.Header.Get("Content-Disposition")
+	fileName := parseContentDisposition(contentDisposition)
+	file, err := os.Create(fileName)
+	if err != nil {
+		logger.Panicf("Create file error: %v", err)
+	}
+	defer file.Close()
+	_, err = io.Copy(file, res.Body)
+	if err != nil {
+		return
+	}
+
+}

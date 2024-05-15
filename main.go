@@ -29,7 +29,7 @@ func main() {
 	// modify config struct by conf file
 	conf = model.LoadConf(conf)
 	logger.Debugf("conf.Run.Mode= %s", conf.Flags.Mode)
-
+	logger.Debugf("conf:%v", conf)
 	switch conf.Flags.Mode {
 	case "server":
 		server.Run(conf)

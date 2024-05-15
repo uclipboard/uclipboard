@@ -8,4 +8,4 @@ X_selection = "clipboard"
 [server]
 pull_history_size = 5
 tmp_path = "./tmp" 
-default_file_life = 5 #s
+default_file_life = 300 #s

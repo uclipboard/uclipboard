@@ -25,6 +25,9 @@ Single app to implement both client and server
 
 ## TODOLIST
 - [x] Hostname source support
+- [ ] better error and trace message 
+- [ ] better status code /better client msg 
+- [ ] full test file upload on X11 and Windows 
 - [ ] Web UI
 - [ ] Authentication(randomly password generator)
 ## Bug/Feature

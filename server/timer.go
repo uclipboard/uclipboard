@@ -26,15 +26,16 @@ func TimerGC(conf *model.Conf) {
 		// Delete expired files
 		for _, file := range expiredFiles {
 			logger.Debugf("Expired file: Name=%s, CreatedAt=%d", file.FileName, file.CreatedTs)
-			err := core.DelTmpFile(conf, &file)
-			if err != nil {
-				logger.Warnf("Delete expired file failed: %v", err)
-			}
+
 			err = core.DelFileMetadataRecordById(&file)
 			if err != nil {
 				logger.Warnf("Delete expired file metadata record failed: %v", err)
 			}
 
+			err := core.DelTmpFile(conf, &file)
+			if err != nil {
+				logger.Warnf("Delete expired file failed: %v", err)
+			}
 		}
 
 		time.Sleep(interval)
