@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/dangjinghao/uclipboard/model"
 	"github.com/sirupsen/logrus"
@@ -65,6 +66,7 @@ func newUClipboardHttpClient() *http.Client {
 func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
 	logger.Trace("into UploadFile")
 	file, err := os.Open(filePath)
+	fileName := filepath.Base(filePath) //file.Name doesn't work in the right way on Windows platform
 	if err != nil {
 		logger.Fatalf("open file error: %v", err)
 	}
@@ -72,7 +74,8 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 	// TODO:read file content type
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
-	part, err := bodyWriter.CreateFormFile("file", file.Name())
+	logger.Tracef("upload file name: %s", fileName)
+	part, err := bodyWriter.CreateFormFile("file", fileName)
 	if err != nil {
 		logger.Fatalf("CreateFormField error: %v", err)
 	}

@@ -64,7 +64,11 @@ func mainLoop(conf *model.Conf, adapter model.ClipboardCmdAdapter, client *http.
 
 		} else if previousClipboard.Content != currentClipboard && previousClipboardHistoryidx == 0 {
 			logger.Tracef("previousClipboard.Content is %v\n", []byte(previousClipboard.Content))
-			logger.Tracef("s is %v\n", []byte(currentClipboard))
+			logger.Tracef("currentClipboard is %v\n", []byte(currentClipboard))
+			if currentClipboard == clipboardContentIfIsFile {
+				logger.Debug("currentClipboard is file url clipboard, skip push")
+				continue
+			}
 			logger.Infof("Push => %s", currentClipboard)
 			// It's not good idea to use UploadStringData function because I need wrappedClipboard
 			reqBody, wrappedClipboard := genClipboardReqBody(currentClipboard, logger)
