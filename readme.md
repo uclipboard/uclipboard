@@ -34,3 +34,4 @@ Single app to implement both client and server
 - In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
 - Only support TEXT copy/paste, but support upload file.  
 - On X11, if the system clipboard is empty, this app may exit with msg: `adapter.Paste error:exit status 1`. You can copy any text to your clipboard then rerun it
+- There is only `\n` in our db as newline rather than `\r\n`. So win-clip adapter will automaticlly switch them on Windows

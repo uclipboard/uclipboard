@@ -3,6 +3,7 @@ package adapter
 import (
 	"bytes"
 	"os/exec"
+	"strings"
 )
 
 type WinClip struct {
@@ -10,6 +11,7 @@ type WinClip struct {
 
 func (WC *WinClip) Copy(s string) error {
 	copyCmd := exec.Command("./win-clip.exe", "copy", "-u")
+	s = strings.ReplaceAll(s, "\n", "\r\n")
 	copyCmd.Stdin = bytes.NewBufferString(s)
 
 	err := copyCmd.Run()
@@ -30,7 +32,9 @@ func (WC *WinClip) Paste() (string, error) {
 		return "", err
 	}
 
-	return out.String(), nil
+	outStr := out.String()
+	outStr = strings.ReplaceAll(outStr, "\r\n", "\n")
+	return outStr, nil
 }
 
 func NewWinClip() *WinClip {
