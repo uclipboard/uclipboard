@@ -22,7 +22,7 @@ func Run(c *model.Conf) {
 		clipboardAdapter = adapter.NewWinClip()
 	default:
 		// win MacOS(pbcopy/paste)
-		logger.Panic("error unknown clipboard adapter")
+		logger.Fatal("error unknown clipboard adapter")
 	}
 	client := newUClipboardHttpClient()
 	mainLoop(c, clipboardAdapter, client)
@@ -35,9 +35,13 @@ func Instant(c *model.Conf) {
 	// priority: binary file > pull data > argument message > stdin
 
 	if c.Flags.Upload != "" {
-		fmt.Print(uploadFile(c.Flags.Upload, client, c, logger))
+		logger.Tracef("upload binary file: %s", c.Flags.Upload)
+
+		uploadFile(c.Flags.Upload, client, c, logger)
 
 	} else if c.Flags.Latest || c.Flags.Download != "" {
+		logger.Tracef("download binary file. c.Flags.Latest:%t, c.Flags.Download:%s", c.Flags.Latest, c.Flags.Download)
+
 		var fileName string
 		if c.Flags.Latest {
 			fileName = ""
@@ -45,38 +49,40 @@ func Instant(c *model.Conf) {
 			fileName = c.Flags.Download
 		}
 		downloadFile(fileName, client, c, logger)
-		// panic when download file failed
+
 		fmt.Printf("Download file success: %s\n", fileName)
 
 	} else if c.Flags.Pull {
+		logger.Trace("pull clipboard from server")
+
 		var clipboardArr []model.Clipboard
 		resp, err := pullStringData(client, c, logger)
 		if err != nil {
-			logger.Panicf("PullStringData error:%s", err.Error())
+			logger.Fatalf("cannot pull data  from server: %s", err.Error())
 		}
-		logger.Tracef("resp:%s", resp)
+		logger.Tracef("resp: %s", resp)
 		if err = json.Unmarshal(resp, &clipboardArr); err != nil {
-			logger.Panicf("cannot parse response body: %s", err.Error())
+			logger.Fatalf("cannot parse response body: %s", err.Error())
 		}
-		if clipboardArr[0].ContentType == "binary" {
-			fmt.Print(model.UrlDownloadApi(c, clipboardArr[0].Content))
-		} else {
-			fmt.Print(clipboardArr[0].Content)
-		}
+		newContent := deteckAndconcatClipboardFileUrl(c, &clipboardArr[0])
+		logger.Tracef("newContent: %s", newContent)
+		fmt.Println(newContent)
 
 	} else if argMsg == "" {
+		logger.Trace("read data from stdin because there is no argument message")
 		in, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			logger.Panicf("Read data from stdin error: %s", err.Error())
+			logger.Fatalf("Read data from stdin error: %s", err.Error())
 		}
 
 		if len(in) != 0 {
 			uploadStringData(string(in), client, c, logger)
 		} else {
-			logger.Warn("nothing readed")
-			os.Exit(1)
+			logger.Fatal("nothing readed")
 		}
+
 	} else if argMsg != "" {
+		logger.Tracef("upload argument message: %s", argMsg)
 		uploadStringData(argMsg, client, c, logger)
 	}
 

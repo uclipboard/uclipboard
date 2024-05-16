@@ -25,10 +25,12 @@ Single app to implement both client and server
 
 ## TODOLIST
 - [x] Hostname source support
-- [ ] better error and trace message 
-- [ ] better status code /better client msg 
+- [x] better error and trace message 
+- [x] better status code /better client msg 
 - [ ] full test file upload on X11 and Windows 
 - [ ] Web UI
 - [ ] Authentication(randomly password generator)
 ## Bug/Feature
-In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
+- In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
+- Only support TEXT copy/paste, but support upload file.  
+- On X11, if the system clipboard is empty, this app may exit with msg: `adapter.Paste error:exit status 1`. You can copy any text to your clipboard then rerun it

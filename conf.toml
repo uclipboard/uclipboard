@@ -7,5 +7,6 @@ interval = 2000 #ms
 X_selection = "clipboard" 
 [server]
 pull_history_size = 5
+port = 8080
 tmp_path = "./tmp" 
 default_file_life = 300 #s

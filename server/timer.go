@@ -9,7 +9,7 @@ import (
 
 func TimerGC(conf *model.Conf) {
 	logger := model.NewModuleLogger("timer")
-	logger.Debugf("TimerGC started, interval=%ds", conf.Server.TimerInterval)
+	logger.Infof("TimerGC started, interval: %ds", conf.Server.TimerInterval)
 	interval := time.Duration(conf.Server.TimerInterval) * time.Second
 	for {
 		// Get the current time
@@ -20,9 +20,7 @@ func TimerGC(conf *model.Conf) {
 			logger.Warnf("Query expired files failed: %v", err)
 			continue
 		}
-		if len(expiredFiles) == 0 {
-			logger.Debugf("No expired files")
-		}
+
 		// Delete expired files
 		for _, file := range expiredFiles {
 			logger.Debugf("Expired file: Name=%s, CreatedAt=%d", file.FileName, file.CreatedTs)
@@ -37,7 +35,12 @@ func TimerGC(conf *model.Conf) {
 				logger.Warnf("Delete expired file failed: %v", err)
 			}
 		}
-
+		if len(expiredFiles) == 0 {
+			logger.Debugf("No expired files")
+		} else {
+			logger.Debugf("Expired files count: %d", len(expiredFiles))
+		}
+		// TODO: clean clipboard data
 		time.Sleep(interval)
 	}
 }

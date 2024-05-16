@@ -63,7 +63,7 @@ var (
 var logger *logrus.Entry
 
 func InitDB(c *model.Conf) {
-	logger = model.NewModuleLogger("DB")
+	logger = model.NewModuleLogger("DB") //InitDB is abosultely the first function to be called in server.Run
 	DB = sqlx.MustConnect("sqlite3", c.Server.DBPath)
 	DB.MustExec(clipboard_schema)
 	DB.MustExec(file_metadata_schema)
@@ -72,13 +72,13 @@ func InitDB(c *model.Conf) {
 }
 
 func AddClipboardRecord(c *model.Clipboard) (err error) {
-	logger.Tracef("AddclipboardRecord: %v", c)
+	logger.Tracef("call AddclipboardRecord(%v)", c)
 	_, err = DB.NamedExec(insertClipboard, c)
 	return
 }
 
 func GetLatestClipboardRecord(c *[]model.Clipboard, N int) (err error) {
-	logger.Tracef("GetLatestClipboardRecord: %v", c)
+	logger.Tracef("call GetLatestClipboardRecord(%v)", c)
 	err = DB.Select(c, fmt.Sprintf(getLatestClipboard, N))
 	return
 }
@@ -91,13 +91,13 @@ func GetFileMetadataLatestRecord(d *model.FileMetadata) (err error) {
 
 // find the latest record by id or name
 func GetFileMetadataRecordByOrName(d *model.FileMetadata) (err error) {
-	logger.Tracef("GetFileMetadataRecordByOrName: %v", d)
+	logger.Tracef("call GetFileMetadataRecordByOrName(%v)", d)
 	err = DB.Get(d, queryFileMetadataByIdOrName, d.Id, d.FileName)
 	return
 }
 
 func AddFileMetadataRecord(d *model.FileMetadata) (fileId int64, err error) {
-	logger.Tracef("in AddFileMetadataRecord: %v", d)
+	logger.Tracef("call AddFileMetadataRecord(%v)", d)
 	result, err := DB.NamedExec(insertFileMetadata, d)
 	if err != nil {
 		return
@@ -110,7 +110,7 @@ func AddFileMetadataRecord(d *model.FileMetadata) (fileId int64, err error) {
 }
 
 func DelFileMetadataRecordById(d *model.FileMetadata) (err error) {
-	logger.Tracef("DelFileMetadataRecordById: %v", d)
+	logger.Tracef("call DelFileMetadataRecordById(%v)", d)
 	_, err = DB.Exec(deleteFileMetadataById, d.Id)
 	if err != nil {
 		return
@@ -119,7 +119,7 @@ func DelFileMetadataRecordById(d *model.FileMetadata) (err error) {
 }
 
 func DelTmpFile(conf *model.Conf, d *model.FileMetadata) (err error) {
-	logger.Tracef("DelTmpFile: %v", d)
+	logger.Tracef("call DelTmpFile(%v)", d)
 	err = os.Remove(path.Join(conf.Server.TmpPath, d.TmpPath))
 	if err != nil {
 		return err
@@ -128,6 +128,7 @@ func DelTmpFile(conf *model.Conf, d *model.FileMetadata) (err error) {
 }
 
 func QueryExpiredFiles(conf *model.Conf, t int64) (expiredFiles []model.FileMetadata, err error) {
+	logger.Tracef("call QueryExpiredFiles(%v)", t)
 	err = DB.Select(&expiredFiles, queryFileMetadataByExpireTs, t)
 	return
 }

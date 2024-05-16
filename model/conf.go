@@ -22,6 +22,7 @@ type Conf struct {
 		DefaultFileLife int64  `toml:"default_file_life"`
 		TimerInterval   int    `toml:"timer_interval"`
 		MaxHistorySize  int    `toml:"max_history_size"`
+		Port            int    `toml:"port"`
 	} `toml:"server"`
 
 	Flags struct {
@@ -51,6 +52,7 @@ func NewConfWithDefault() *Conf {
 	c.Server.TmpPath = "./tmp/"
 	c.Server.TimerInterval = 60
 	c.Server.DefaultFileLife = 60 * 5
+	c.Server.Port = 8080
 	return &c
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/dangjinghao/uclipboard/model"
@@ -49,8 +50,11 @@ func Run(c *model.Conf) {
 	core.InitDB(c)
 	go TimerGC(c)
 
+	logger := model.NewModuleLogger("http")
 	switch c.Flags.LogLevel {
 	case "debug":
+		fallthrough
+	case "trace":
 		gin.SetMode(gin.DebugMode)
 	case "info":
 		fallthrough //Unnecessary, but I want :)
@@ -64,10 +68,11 @@ func Run(c *model.Conf) {
 	{
 		v0 := api.Group(model.ApiVersion)
 		v0.GET(model.Api_Pull, HandlerPull(c))
-		v0.GET(model.Api_History, HandlerHistory)
+		v0.GET(model.Api_History, HandlerHistory(c))
 		v0.POST(model.Api_Push, HandlerPush(c))
 		v0.POST(model.Api_Upload, HandlerUpload(c))
 		v0.GET(model.Api_Download, HandlerDownload(c))
 	}
-	r.Run()
+	logger.Infof("Server is running on :%d", c.Server.Port)
+	r.Run(":" + strconv.Itoa(c.Server.Port))
 }

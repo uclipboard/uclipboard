@@ -15,10 +15,11 @@ import (
 )
 
 func genClipboardReqBody(c string, logger *logrus.Entry) ([]byte, *model.Clipboard) {
+	logger.Trace("into genClipboardReqBody")
 	reqData := model.NewFullClipoard(c)
 	reqBody, err := json.Marshal(reqData)
 	if err != nil {
-		logger.Panicf("parse response json body error: %s", err.Error())
+		logger.Fatalf("parse response json body error: %s", err.Error())
 
 	}
 	return reqBody, reqData
@@ -38,16 +39,17 @@ func uploadStringData(s string, client *http.Client, c *model.Conf, logger *logr
 }
 
 func pullStringData(client *http.Client, c *model.Conf, logger *logrus.Entry) ([]byte, error) {
+	logger.Trace("into pullStringData")
 	pullApi := model.UrlPullApi(c)
-	logger.Tracef("pullApi:%s", pullApi)
+	logger.Tracef("pullApi: %s", pullApi)
 	resp, err := client.Get(pullApi)
 	if err != nil {
-		logger.Warnf("Error sending req: %s", err)
+		logger.Warnf("error sending req: %s", err)
 		return nil, err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Warnf("Error reading response body: %s", err)
+		logger.Warnf("error reading response body: %s", err)
 		return nil, err
 	}
 
@@ -60,12 +62,11 @@ func newUClipboardHttpClient() *http.Client {
 	return &http.Client{}
 }
 
-func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *logrus.Entry) string {
+func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
 	logger.Trace("into UploadFile")
 	file, err := os.Open(filePath)
 	if err != nil {
-		logger.Panicf("Open file error: %v", err)
-		return ""
+		logger.Fatalf("open file error: %v", err)
 	}
 	defer file.Close()
 	// TODO:read file content type
@@ -73,24 +74,26 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	part, err := bodyWriter.CreateFormFile("file", file.Name())
 	if err != nil {
-		logger.Panicf("CreateFormField error: %v", err)
+		logger.Fatalf("CreateFormField error: %v", err)
 	}
 	num, err := io.Copy(part, file)
 	if err != nil {
-		logger.Panicf("Copy file error: %v", err)
+		logger.Fatalf("copy file error: %v", err)
 	}
+	logger.Tracef("copy file size: %d", num)
+
 	err = bodyWriter.Close()
 	if err != nil {
-		logger.Panicf("Close bodyWriter error: %v", err)
+		logger.Fatalf("close bodyWriter error: %v", err)
 	}
 
-	logger.Tracef("Copy file size: %d", num)
 	req, err := http.NewRequest("POST", model.UrlUploadApi(c), bodyBuf)
 	if err != nil {
-		logger.Panicf("NewRequest error: %v", err)
+		logger.Fatalf("NewRequest error: %v", err)
 	}
 	fileContentType := bodyWriter.FormDataContentType()
 	req.Header.Set("Content-Type", fileContentType)
+
 	logger.Tracef("Content-Type: %s", fileContentType)
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -101,15 +104,15 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Panicf("Upload file error: %v", err)
+		logger.Fatalf("Upload file error: %v", err)
 	}
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Panicf("Read response body error: %v", err)
+		logger.Fatalf("Read response body error: %v", err)
 	}
 	logger.Tracef("Response body: %s", respBody)
-	return string(respBody)
+	fmt.Println(string(respBody))
 }
 
 func parseContentDisposition(contentDisposition string) string {
@@ -122,9 +125,9 @@ func parseContentDisposition(contentDisposition string) string {
 
 func downloadFile(fileId string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
 	logger.Trace("into DownloadFile")
-	logger.Tracef("fileId:%s", fileId)
+	logger.Tracef("fileId: %s", fileId)
 	downloadUrl := model.UrlDownloadApi(c, fileId)
-	logger.Tracef("downloadApi:%s", downloadUrl)
+	logger.Tracef("downloadApi: %s", downloadUrl)
 	res, err := client.Get(downloadUrl)
 	if err != nil {
 		return
@@ -134,10 +137,11 @@ func downloadFile(fileId string, client *http.Client, c *model.Conf, logger *log
 		fmt.Printf("Download file failed:%d", res.StatusCode)
 	}
 	contentDisposition := res.Header.Get("Content-Disposition")
+	logger.Tracef("Content-Disposition: %s", contentDisposition)
 	fileName := parseContentDisposition(contentDisposition)
 	file, err := os.Create(fileName)
 	if err != nil {
-		logger.Panicf("Create file error: %v", err)
+		logger.Fatalf("Create file error: %v", err)
 	}
 	defer file.Close()
 	_, err = io.Copy(file, res.Body)
@@ -145,4 +149,13 @@ func downloadFile(fileId string, client *http.Client, c *model.Conf, logger *log
 		return
 	}
 
+}
+
+// if this clipboard content is a binary file, return the download url
+func deteckAndconcatClipboardFileUrl(conf *model.Conf, clipboard *model.Clipboard) string {
+	content := clipboard.Content
+	if clipboard.ContentType == "binary" {
+		content = model.UrlDownloadApi(conf, content)
+	}
+	return content
 }
