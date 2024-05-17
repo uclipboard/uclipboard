@@ -27,7 +27,8 @@ Single app to implement both client and server
 - [x] Hostname source support
 - [x] better error and trace message 
 - [x] better status code /better client msg 
-- [ ] full test file upload on X11 and Windows 
+- [x] not full cover test of file upload on X11 and Windows 
+- [ ] test initial situation of DB 
 - [ ] Web UI
 - [ ] Authentication(randomly password generator)
 ## Bug/Feature

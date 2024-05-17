@@ -50,8 +50,6 @@ func Instant(c *model.Conf) {
 		}
 		downloadFile(fileName, client, c, logger)
 
-		fmt.Printf("Download file success: %s\n", fileName)
-
 	} else if c.Flags.Pull {
 		logger.Trace("pull clipboard from server")
 

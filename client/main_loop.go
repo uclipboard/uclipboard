@@ -17,7 +17,14 @@ func mainLoop(conf *model.Conf, adapter model.ClipboardCmdAdapter, client *http.
 		time.Sleep(time.Duration(conf.Client.Interval) * time.Millisecond) //sleep first to avoid the possible occured error then it skip sleep
 		currentClipboard, E := adapter.Paste()
 		if E != nil {
-			logger.Fatalf("adapter.Paste error:%v", E)
+			if E == model.ErrEmptyClipboard {
+				logger.Warnf(`adapter.Paste error:%v ,set empty string clipboard.`, E)
+				currentClipboard = ""
+				// FIXME: it could caused a problem that when I implement pushing local clipboard to server when the first connect.
+			} else {
+				logger.Fatalf("adapter.Paste error:%v", E)
+			}
+
 		}
 		logger.Tracef("adapter.Paste %v", []byte(currentClipboard))
 

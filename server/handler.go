@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"path"
@@ -24,7 +25,7 @@ func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {
 		}
 		if err := core.AddClipboardRecord(clipboardData); err != nil {
 			logger.Tracef("AddClipboardRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server interal error: " + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "add clipboard record error: " + err.Error()})
 			return
 		}
 		ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
@@ -37,7 +38,7 @@ func HandlerPull(conf *model.Conf) func(ctx *gin.Context) {
 		var clipboardArr []model.Clipboard
 		if err := core.GetLatestClipboardRecord(&clipboardArr, conf.Server.PullHistorySize); err != nil {
 			logger.Tracef("GetLatestClipboardRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal error: " + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "get latest clipboard record error: " + err.Error()})
 			return
 		}
 		ctx.JSON(http.StatusOK, clipboardArr)
@@ -87,13 +88,13 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		// And at that time, both of the tables are not synchronized
 		if err := core.AddClipboardRecord(newClipboardRecord); err != nil {
 			logger.Tracef("AddClipboardRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal error:" + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "add clipboard record error:" + err.Error()})
 			return
 		}
 		fileId, err := core.AddFileMetadataRecord(fileMetadata)
 		if err != nil {
 			logger.Tracef("AddFileMetadataRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal error:" + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "add file metadata record error:" + err.Error()})
 			return
 		}
 		logger.Debugf("The new file id is %v", fileId)
@@ -112,7 +113,7 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 		if fileName == "" {
 			if err := core.GetFileMetadataLatestRecord(metadata); err != nil {
 				logger.Tracef("GetFileMetadataLatestRecord error: %v", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal error:" + err.Error()})
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "get latest file metadata error:" + err.Error()})
 				return
 			}
 			logger.Debugf("Get the latest file metadata record: %v", metadata)
@@ -132,7 +133,11 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 
 			err := core.GetFileMetadataRecordByOrName(metadata)
 			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal error:" + err.Error()})
+				if err == sql.ErrNoRows {
+					ctx.JSON(http.StatusNotFound, gin.H{"message": "the file may be expired or does not exists."})
+					return
+				}
+				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "get file metadata record error:" + err.Error()})
 				return
 			}
 		}

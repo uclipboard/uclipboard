@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/dangjinghao/uclipboard/model"
 	"github.com/sirupsen/logrus"
@@ -66,11 +65,18 @@ func newUClipboardHttpClient() *http.Client {
 func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
 	logger.Trace("into UploadFile")
 	file, err := os.Open(filePath)
-	fileName := filepath.Base(filePath) //file.Name doesn't work in the right way on Windows platform
 	if err != nil {
 		logger.Fatalf("open file error: %v", err)
 	}
+
 	defer file.Close()
+	fileStat, err := file.Stat()
+	if err != nil {
+		logger.Fatalf("stat file error: %v", err)
+	}
+	fileName := fileStat.Name()
+
+	fmt.Printf("uploading file: %s\t file_size: %vKiB\n", fileName, float32(fileStat.Size()/1024))
 	// TODO:read file content type
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
@@ -115,7 +121,18 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 		logger.Fatalf("Read response body error: %v", err)
 	}
 	logger.Tracef("Response body: %s", respBody)
-	fmt.Println(string(respBody))
+	var data interface{}
+	err = json.Unmarshal(respBody, &data)
+	if err != nil {
+		logger.Fatalf("Failed to unmarshal response body: %v", err)
+	}
+	respData := data.(map[string]interface{})
+	if respData["message"] != "ok" {
+		logger.Fatalf("Got unexpected response message,response is: %s", string(respBody))
+	}
+	fmt.Printf("upload file success, file_id: %v, file_name: %v, life_time: %vs\n",
+		respData["file_id"], respData["filename"], respData["life_time"])
+
 }
 
 func parseContentDisposition(contentDisposition string) string {
@@ -137,20 +154,27 @@ func downloadFile(fileId string, client *http.Client, c *model.Conf, logger *log
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		fmt.Printf("Download file failed:%d", res.StatusCode)
+		// print response body
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			logger.Fatalf("read response body error when response stats code is not OK: %v", err)
+		}
+		logger.Tracef("response body: %s", body)
+		logger.Fatalf("download file failed, status_code %d, response_body: %v", res.StatusCode, string(body))
 	}
 	contentDisposition := res.Header.Get("Content-Disposition")
 	logger.Tracef("Content-Disposition: %s", contentDisposition)
 	fileName := parseContentDisposition(contentDisposition)
 	file, err := os.Create(fileName)
 	if err != nil {
-		logger.Fatalf("Create file error: %v", err)
+		logger.Fatalf("create file error: %v", err)
 	}
 	defer file.Close()
-	_, err = io.Copy(file, res.Body)
+	N, err := io.Copy(file, res.Body)
 	if err != nil {
-		return
+		logger.Fatalf("copy file error: %v", err)
 	}
+	fmt.Printf("download file success: %s, file_size: %vKib\n", fileName, float32(N/1024))
 
 }
 
