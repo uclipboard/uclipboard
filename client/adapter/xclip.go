@@ -33,8 +33,6 @@ func (XC *XClipClipboard) Paste() (string, error) {
 
 	// If system clipboard is empty, xclip will return exit code 1 with `Error: target STRING not available` in stdout
 	err := pasteCmd.Run()
-
-	outputStr := out.String()
 	if err != nil {
 		if strings.Contains(stdErr.String(), "target STRING not available") {
 			return "", model.ErrEmptyClipboard
@@ -42,6 +40,7 @@ func (XC *XClipClipboard) Paste() (string, error) {
 			return "", err
 		}
 	}
+	outputStr := out.String()
 	return outputStr, nil
 }
 
