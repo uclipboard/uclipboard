@@ -23,7 +23,10 @@ var (
 		content_type varchar(128) default 'text'
 		);
 	`, clipboard_table_name)
-
+	addFirstRecordToClipboardTable = fmt.Sprintf(`insert into %s
+	(ts,content,hostname,content_type) select
+	0,'uclipboard started!','uclipboard','text' where (select count(*) from %s) = 0
+	`, clipboard_table_name, clipboard_table_name)
 	insertClipboard = fmt.Sprintf(`insert into %s 
 	(ts,content,hostname,content_type) values
 	(:ts,:content,:hostname,:content_type)
@@ -67,7 +70,14 @@ func InitDB(c *model.Conf) {
 	DB = sqlx.MustConnect("sqlite3", c.Server.DBPath)
 	DB.MustExec(clipboard_schema)
 	DB.MustExec(file_metadata_schema)
-
+	firsftRecordInsetResult := DB.MustExec(addFirstRecordToClipboardTable)
+	N, err := firsftRecordInsetResult.RowsAffected()
+	if err != nil {
+		logger.Fatalf("addFirstRecordToClipboardTable error: %v", err)
+	}
+	if N != 0 {
+		logger.Info("initialize clipboard table.")
+	}
 	logger.Debug("DB init completed")
 }
 
