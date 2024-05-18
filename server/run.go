@@ -74,5 +74,7 @@ func Run(c *model.Conf) {
 		v0.GET(model.Api_Download, HandlerDownload(c))
 	}
 	logger.Infof("Server is running on :%d", c.Server.Port)
-	r.Run(":" + strconv.Itoa(c.Server.Port))
+	if err := r.Run(":" + strconv.Itoa(c.Server.Port)); err != nil {
+		logger.Fatalf("Server run error: %s", err.Error())
+	}
 }
