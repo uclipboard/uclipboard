@@ -116,6 +116,10 @@ func uploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 		logger.Fatalf("Upload file error: %v", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger.Fatalf("Upload file failed, status: %s", resp.Status)
+	}
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Fatalf("Read response body error: %v", err)
@@ -150,6 +154,7 @@ func downloadFile(fileId string, client *http.Client, c *model.Conf, logger *log
 	logger.Tracef("downloadApi: %s", downloadUrl)
 	res, err := client.Get(downloadUrl)
 	if err != nil {
+		logger.Fatalf("download file error: %v", err)
 		return
 	}
 	defer res.Body.Close()

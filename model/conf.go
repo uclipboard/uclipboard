@@ -7,6 +7,7 @@ import (
 )
 
 type Conf struct {
+	Token  string `toml:"token"`
 	Client struct {
 		ServerUrl  string `toml:"server_url"`
 		Connect    string `toml:"connect"`
@@ -25,15 +26,16 @@ type Conf struct {
 		Port            int    `toml:"port"`
 	} `toml:"server"`
 
-	Flags struct {
-		Mode     string
-		ConfPath string
-		LogLevel string
-		Msg      string
-		Download string
-		Upload   string
-		Pull     bool
-		Latest   bool
+	Runtime struct {
+		Mode         string
+		ConfPath     string
+		LogLevel     string
+		Msg          string
+		Download     string
+		Upload       string
+		Pull         bool
+		Latest       bool
+		TokenEncrypt string
 	}
 }
 
@@ -44,13 +46,14 @@ func NewConfWithDefault() *Conf {
 	// What a pity! it is too hard to resolve nest structure
 	// in a simple function.
 	c := Conf{}
-	c.Client.Connect = "http"
 	c.Client.Interval = 1000
-	c.Server.PullHistorySize = 5
-	c.Server.DBPath = "./uclipboard.db"
+	c.Client.Connect = "http"
 	c.Client.XSelection = "clipboard"
+
+	c.Server.DBPath = "./uclipboard.db"
 	c.Server.TmpPath = "./tmp/"
 	c.Server.TimerInterval = 60
+	c.Server.PullHistorySize = 5
 	c.Server.DefaultFileLife = 60 * 5
 	c.Server.Port = 8080
 	return &c
@@ -58,13 +61,22 @@ func NewConfWithDefault() *Conf {
 
 func LoadConf(conf *Conf) *Conf {
 	logger := NewModuleLogger("config_loader")
-	content, err := os.ReadFile(conf.Flags.ConfPath)
+	content, err := os.ReadFile(conf.Runtime.ConfPath)
 	if err != nil {
 		logger.Fatalf("Can't load config file: %s", err.Error())
 	}
 	err = toml.Unmarshal(content, conf)
 	if err != nil {
 		logger.Fatalf("Can't parse config file: %s", err.Error())
+	}
+
+	return conf
+}
+
+func FormatConf(conf *Conf) *Conf {
+	// delete the last '/' of server url
+	if conf.Client.ServerUrl[len(conf.Client.ServerUrl)-1] == '/' {
+		conf.Client.ServerUrl = conf.Client.ServerUrl[:len(conf.Client.ServerUrl)-1]
 	}
 
 	return conf

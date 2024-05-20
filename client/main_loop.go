@@ -24,6 +24,12 @@ func mainLoop(conf *model.Conf, adapter model.ClipboardCmdAdapter, client *http.
 			logger.Warnf("error sending request: %s", err)
 			continue
 		}
+		if resp.StatusCode != http.StatusOK {
+			logger.Warnf("error response status: %s", resp.Status)
+			resp.Body.Close()
+			continue
+		}
+
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			logger.Fatalf("error reading response body: %s", err)

@@ -157,3 +157,9 @@ func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
 
 	}
 }
+
+func HandlerPublicShare(c *model.Conf) func(ctx *gin.Context) {
+	// TODO share binary file to public
+	return func(ctx *gin.Context) {
+	}
+}
