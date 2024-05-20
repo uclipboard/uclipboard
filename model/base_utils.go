@@ -1,6 +1,9 @@
 package model
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -26,4 +29,20 @@ func RandString(size int) string {
 
 	// Print the random string
 	return randomString
+}
+
+func GetMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
+}
+
+const encryptSalt = "uclipbard:%s"
+
+func TokenEncrypt(token string) string {
+	// encrypt token with 3 pheases md5
+	md5_1 := GetMD5Hash(fmt.Sprintf(encryptSalt, token))
+	md5_2 := GetMD5Hash(fmt.Sprintf(encryptSalt, md5_1))
+	md5_3 := GetMD5Hash(fmt.Sprintf(encryptSalt, md5_2))
+
+	return md5_3
 }

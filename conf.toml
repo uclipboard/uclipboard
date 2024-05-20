@@ -1,12 +1,12 @@
-
+token = "token" #necessary
 [client]
-server_url = "http://localhost:8080" #necessary
+server_url = "http://localhost:8080/" #necessary
 connect = "http" 
 adapter = "wl" #necessary
 interval = 2000 #ms
-X_selection = "clipboard" 
+X_selection = "clipboard" # select the clipboard you want to copy/paste 
 [server]
 pull_history_size = 5
 port = 8080
-tmp_path = "./tmp" 
+tmp_path = "./tmp/" 
 default_file_life = 300 #s

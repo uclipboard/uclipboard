@@ -46,12 +46,29 @@ func ginLoggerMiddle() gin.HandlerFunc {
 	}
 }
 
+func ginAuthMiddle(conf *model.Conf) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.Query("token")
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+			c.Abort()
+			return
+		}
+		if token != conf.Runtime.TokenEncrypt {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization failed"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 func Run(c *model.Conf) {
 	core.InitDB(c)
 	go TimerGC(c)
 
 	logger := model.NewModuleLogger("http")
-	switch c.Flags.LogLevel {
+	switch c.Runtime.LogLevel {
 	case "debug":
 		fallthrough
 	case "trace":
@@ -67,11 +84,16 @@ func Run(c *model.Conf) {
 	api := r.Group(model.ApiPrefix)
 	{
 		v0 := api.Group(model.ApiVersion)
+		publicV0 := v0.Group(model.ApiPublic)
+
+		v0.Use(ginAuthMiddle(c))
 		v0.GET(model.Api_Pull, HandlerPull(c))
 		v0.GET(model.Api_History, HandlerHistory(c))
 		v0.POST(model.Api_Push, HandlerPush(c))
 		v0.POST(model.Api_Upload, HandlerUpload(c))
 		v0.GET(model.Api_Download, HandlerDownload(c))
+
+		publicV0.GET(model.ApiPublicShare, HandlerPublicShare(c))
 	}
 	logger.Infof("Server is running on :%d", c.Server.Port)
 	if err := r.Run(":" + strconv.Itoa(c.Server.Port)); err != nil {

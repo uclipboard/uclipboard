@@ -31,26 +31,26 @@ func Run(c *model.Conf) {
 func Instant(c *model.Conf) {
 	client := newUClipboardHttpClient()
 	logger := model.NewModuleLogger("instant")
-	argMsg := c.Flags.Msg
+	argMsg := c.Runtime.Msg
 	// priority: binary file > pull data > argument message > stdin
 
-	if c.Flags.Upload != "" {
-		logger.Tracef("upload binary file: %s", c.Flags.Upload)
+	if c.Runtime.Upload != "" {
+		logger.Tracef("upload binary file: %s", c.Runtime.Upload)
 
-		uploadFile(c.Flags.Upload, client, c, logger)
+		uploadFile(c.Runtime.Upload, client, c, logger)
 
-	} else if c.Flags.Latest || c.Flags.Download != "" {
-		logger.Tracef("download binary file. c.Flags.Latest:%t, c.Flags.Download:%s", c.Flags.Latest, c.Flags.Download)
+	} else if c.Runtime.Latest || c.Runtime.Download != "" {
+		logger.Tracef("download binary file. c.Flags.Latest:%t, c.Flags.Download:%s", c.Runtime.Latest, c.Runtime.Download)
 
 		var fileName string
-		if c.Flags.Latest {
+		if c.Runtime.Latest {
 			fileName = ""
 		} else {
-			fileName = c.Flags.Download
+			fileName = c.Runtime.Download
 		}
 		downloadFile(fileName, client, c, logger)
 
-	} else if c.Flags.Pull {
+	} else if c.Runtime.Pull {
 		logger.Trace("pull clipboard from server")
 
 		var clipboardArr []model.Clipboard
