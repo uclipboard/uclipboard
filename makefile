@@ -6,7 +6,7 @@ BUILD_DIR := .
 SRCS := $(shell find . -type f -name "*.go")
 
 TARGET := uclipboard
-TARGET_WIN := $(TARGET_WIN)
+TARGET_WIN := $(TARGET).exe
 
 BUILD_CMD := $(GO) build -ldflags="-s -w"  -o $(BUILD_DIR)/$(TARGET) $(PROJECT_DIR)
 BUILD_WIN_CMD := $(GO) build -ldflags="-s -w"  -o $(BUILD_DIR)/$(TARGET_WIN) $(PROJECT_DIR)
@@ -32,10 +32,9 @@ $(TARGET_WIN): $(SRCS)
 	@$(BUILD_WIN_CMD)
 clean:
 	@rm -f $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/$(TARGET_WIN)
-
 run: $(TARGET)
 	@echo "run local clinet and server on tmux"
-	@tmux new-session -n run_uclipboard "$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL)"  \
-		\; split-window -h "$(BUILD_DIR)/$(TARGET) --mode client --log-level $(LOG_LEVEL)" 
+	@tmux new-session -n run_uclipboard "$(SHELL) -c '$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL); $(SHELL)'"  \
+		\; split-window -h "$(SHELL) -c '$(BUILD_DIR)/$(TARGET) --mode client --log-level $(LOG_LEVEL); $(SHELL)'" 
 
 .PHONY: clean all run
