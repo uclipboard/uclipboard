@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"os/exec"
 	"strings"
-
-	"github.com/dangjinghao/uclipboard/model"
 )
 
 type XClipClipboard struct {
@@ -35,7 +33,7 @@ func (XC *XClipClipboard) Paste() (string, error) {
 	err := pasteCmd.Run()
 	if err != nil {
 		if strings.Contains(stdErr.String(), "target STRING not available") {
-			return "", model.ErrEmptyClipboard
+			return "", ErrEmptyClipboard
 		} else {
 			return "", err
 		}

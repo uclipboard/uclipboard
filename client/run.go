@@ -11,7 +11,7 @@ import (
 )
 
 func Run(c *model.Conf) {
-	var clipboardAdapter model.ClipboardCmdAdapter
+	var clipboardAdapter adapter.ClipboardCmdAdapter
 	logger := model.NewModuleLogger("client")
 	switch c.Client.Adapter {
 	case "wl":

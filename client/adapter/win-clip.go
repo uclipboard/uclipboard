@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"os/exec"
 	"strings"
-
-	"github.com/dangjinghao/uclipboard/model"
 )
 
 type WinClip struct {
@@ -33,7 +31,7 @@ func (WC *WinClip) Paste() (string, error) {
 	err := pasteCmd.Run()
 	if err != nil {
 		if strings.Contains(stdErr.String(), "no data") {
-			return "", model.ErrEmptyClipboard
+			return "", ErrEmptyClipboard
 		}
 		return "", err
 	}

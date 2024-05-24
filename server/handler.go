@@ -20,28 +20,28 @@ func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {
 		clipboardData := model.NewClipoardWithDefault()
 		if err := ctx.BindJSON(&clipboardData); err != nil {
 			logger.Tracef("BindJSON error: %v", err)
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Request is invalid."})
+			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("request is invalid.", gin.H{}))
 			return
 		}
 		if err := core.AddClipboardRecord(clipboardData); err != nil {
 			logger.Tracef("AddClipboardRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "add clipboard record error: " + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("add clipboard record error", gin.H{}))
 			return
 		}
-		ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
+		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("", gin.H{}))
 	}
 }
 func HandlerPull(conf *model.Conf) func(ctx *gin.Context) {
 	logger := model.NewModuleLogger("HandlerPull")
 
 	return func(ctx *gin.Context) {
-		var clipboardArr []model.Clipboard
-		if err := core.GetLatestClipboardRecord(&clipboardArr, conf.Server.PullHistorySize); err != nil {
+		clipboardArr, err := core.QueryLatestClipboardRecord(conf.Server.PullHistorySize)
+		if err != nil {
 			logger.Tracef("GetLatestClipboardRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "get latest clipboard record error: " + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get latest clipboard record error", gin.H{}))
 			return
 		}
-		ctx.JSON(http.StatusOK, clipboardArr)
+		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("", clipboardArr))
 	}
 }
 
@@ -50,7 +50,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		file, err := ctx.FormFile("file")
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Cannot read file from request:" + err.Error()})
+			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("can't read file from request", gin.H{}))
 			return
 		}
 		fileMetadata := model.NewFileMetadataWithDefault()
@@ -79,7 +79,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		newClipboardRecord.Content = fileMetadata.FileName
 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
 			logger.Tracef("SaveUploadedFile error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server save internal error:" + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("save file error", gin.H{}))
 			return
 		}
 		logger.Tracef("Upload binary file clipboard record: %v", newClipboardRecord)
@@ -88,17 +88,19 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		// And at that time, both of the tables are not synchronized
 		if err := core.AddClipboardRecord(newClipboardRecord); err != nil {
 			logger.Tracef("AddClipboardRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "add clipboard record error:" + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("add clipboard record error", gin.H{}))
 			return
 		}
 		fileId, err := core.AddFileMetadataRecord(fileMetadata)
 		if err != nil {
 			logger.Tracef("AddFileMetadataRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "add file metadata record error:" + err.Error()})
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("add file metadata record error", gin.H{}))
 			return
 		}
 		logger.Debugf("The new file id is %v", fileId)
-		ctx.JSON(http.StatusOK, gin.H{"message": "ok", "file_id": fileId, "filename": fileMetadata.FileName, "life_time": conf.Server.DefaultFileLife})
+		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("",
+			gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
+				"life_time": conf.Server.DefaultFileLife}))
 	}
 }
 
@@ -113,7 +115,7 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 		if fileName == "" {
 			if err := core.GetFileMetadataLatestRecord(metadata); err != nil {
 				logger.Tracef("GetFileMetadataLatestRecord error: %v", err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "get latest file metadata error:" + err.Error()})
+				ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get the latest file metadata record error", gin.H{}))
 				return
 			}
 			logger.Debugf("Get the latest file metadata record: %v", metadata)
@@ -121,7 +123,7 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 			if fileName[0] == '@' {
 				idInt, err := strconv.Atoi(fileName[1:])
 				if err != nil {
-					ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Server internal error:" + err.Error()})
+					ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("invalid format of file id ", gin.H{}))
 				}
 				metadata.Id = int64(idInt)
 				logger.Debugf("download by id: %v", metadata.Id)
@@ -134,10 +136,10 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 			err := core.GetFileMetadataRecordByOrName(metadata)
 			if err != nil {
 				if err == sql.ErrNoRows {
-					ctx.JSON(http.StatusNotFound, gin.H{"message": "the file may be expired or does not exists."})
+					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("file not found", gin.H{}))
 					return
 				}
-				ctx.JSON(http.StatusInternalServerError, gin.H{"message": "get file metadata record error:" + err.Error()})
+				ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get file metadata record error: "+err.Error(), gin.H{}))
 				return
 			}
 		}
@@ -152,9 +154,25 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 }
 
 func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
-	// TODO:Designed for WebUI, pulling all data from server
+	logger := model.NewModuleLogger("HandlerHistory")
 	return func(ctx *gin.Context) {
-
+		page := ctx.Query("page")
+		if page == "" {
+			page = "1"
+		}
+		pageInt, err := strconv.Atoi(page)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("invalid page number", gin.H{}))
+			return
+		}
+		logger.Tracef("Request clipboard history page: %v", pageInt)
+		clipboards, err := core.QueryClipboardHistory(c, pageInt)
+		if err != nil {
+			logger.Tracef("QueryClipboardHistory error: %v", err)
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("query clipboard history error", gin.H{}))
+			return
+		}
+		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("", clipboards))
 	}
 }
 

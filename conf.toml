@@ -10,3 +10,4 @@ pull_history_size = 5
 port = 8080
 tmp_path = "./tmp/" 
 default_file_life = 300 #s
+clipboard_history_page_size = 5

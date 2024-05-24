@@ -62,6 +62,10 @@ var (
 	queryFileMetadataLatest = fmt.Sprintf(`select * from %s
 	order by created_ts desc limit 1
 	`, file_metadata_table_name)
+
+	queryClipboardHistoryWithPage = fmt.Sprintf(`select * from %s
+	order by id desc limit ? offset ?
+	`, clipboard_table_name)
 )
 var logger *logrus.Entry
 
@@ -87,14 +91,15 @@ func AddClipboardRecord(c *model.Clipboard) (err error) {
 	return
 }
 
-func GetLatestClipboardRecord(c *[]model.Clipboard, N int) (err error) {
-	logger.Tracef("call GetLatestClipboardRecord(%v)", c)
-	err = DB.Select(c, fmt.Sprintf(getLatestClipboard, N))
+func QueryLatestClipboardRecord(N int) (clipboards []model.Clipboard, err error) {
+	logger.Tracef("call GetLatestClipboardRecord(%v)", clipboards)
+	err = DB.Select(&clipboards, fmt.Sprintf(getLatestClipboard, N))
 	return
 }
 
 // find the latest record
 func GetFileMetadataLatestRecord(d *model.FileMetadata) (err error) {
+	logger.Tracef("call GetFileMetadataLatestRecord(%v)", d)
 	err = DB.Get(d, queryFileMetadataLatest)
 	return
 }
@@ -140,5 +145,13 @@ func DelTmpFile(conf *model.Conf, d *model.FileMetadata) (err error) {
 func QueryExpiredFiles(conf *model.Conf, t int64) (expiredFiles []model.FileMetadata, err error) {
 	logger.Tracef("call QueryExpiredFiles(%v)", t)
 	err = DB.Select(&expiredFiles, queryFileMetadataByExpireTs, t)
+	return
+}
+
+func QueryClipboardHistory(conf *model.Conf, page int) (clipboards []model.Clipboard, err error) {
+	logger.Tracef("call QueryClipboardHistory(%v)", page)
+	err = DB.Select(&clipboards, queryClipboardHistoryWithPage,
+		conf.Server.ClipboardHistoryPageSize,
+		(page-1)*conf.Server.ClipboardHistoryPageSize)
 	return
 }

@@ -10,16 +10,16 @@ This is a cross-platform clipboard client/server
 - [x] **Linux**/BSD/Any other go supports platform with X display Protocol(xclip)
 - [x] **Linux**/BSD/Any other go supports platform with Wayland display Protocol(wl-clipboard)
 - [ ] web UI
-- [ ] Android APK()
-- [ ] Chrome OS (fulture)
+- [ ] Android APK (fulture)
 - [ ] Mac OS X (fulture / I don't have any Apple device :-( )
+- [ ] Chrome OS (fulture)
 *To now, the tested platforms are Windows and Linux (with X or wayland) I don't have BSD device with disply service*
 ## Server
 ### Platform
 - Same as before 
 ### API supports
 - [x] HTTP API
-- WS API (fulture)
+- [ ] WS API (fulture)
 
 ## Single Application
 Single app to implement both client and server

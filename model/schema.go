@@ -16,7 +16,7 @@ type Clipboard struct {
 
 func NewClipoardWithDefault() *Clipboard {
 	// I don't know why it doesn't support default value
-	return &Clipboard{Hostname: "unknown", ContentType: "text"}
+	return &Clipboard{Hostname: "unknown", ContentType: "text", Ts: time.Now().Unix()}
 }
 
 // It generates the hostname so take care of where it is called
@@ -29,7 +29,6 @@ func NewFullClipoard(c string) *Clipboard {
 	} else {
 		data.Hostname = hostname
 	}
-	data.Ts = time.Now().Unix()
 	return data
 }
 
@@ -56,5 +55,20 @@ type FileMetadata struct {
 func NewFileMetadataWithDefault() *FileMetadata {
 	return &FileMetadata{
 		CreatedTs: time.Now().Unix(),
+	}
+}
+
+type ServerResponse struct {
+	Message string      `json:"msg"`
+	Data    interface{} `json:"data"`
+}
+
+func NewDefaultServeRes(msg string, data interface{}) *ServerResponse {
+	if msg == "" {
+		msg = "ok"
+	}
+	return &ServerResponse{
+		Message: msg,
+		Data:    data,
 	}
 }

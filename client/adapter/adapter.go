@@ -1,4 +1,4 @@
-package model
+package adapter
 
 import "errors"
 
@@ -8,5 +8,5 @@ type ClipboardCmdAdapter interface {
 }
 
 var (
-	ErrEmptyClipboard = errors.New("xclip exits with 1, perhaps system clipboard is empty")
+	ErrEmptyClipboard = errors.New("adapter exits with 1, perhaps system clipboard is empty")
 )

@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dangjinghao/uclipboard/client/adapter"
 	"github.com/dangjinghao/uclipboard/model"
 )
 
-func mainLoop(conf *model.Conf, adapter model.ClipboardCmdAdapter, client *http.Client) {
+func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *http.Client) {
 	logger := model.NewModuleLogger("loop")
 	var previousClipboard model.Clipboard
 	for {
@@ -59,7 +60,7 @@ func mainLoop(conf *model.Conf, adapter model.ClipboardCmdAdapter, client *http.
 		if previousClipboardHistoryidx == -1 {
 			previousClipboard = remoteClipboards[0]
 			logger.Info("This is a new client, synchronizing from server...")
-			E := adapter.Copy(clipboardContentIfIsFile)
+			E := adapterObj.Copy(clipboardContentIfIsFile)
 
 			if E != nil {
 				logger.Fatalf("adapter.Copy error:%v", E)
@@ -71,7 +72,7 @@ func mainLoop(conf *model.Conf, adapter model.ClipboardCmdAdapter, client *http.
 		} else if previousClipboardHistoryidx > 0 {
 			logger.Infof("Pull <= %v [%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
 			previousClipboard = remoteClipboards[0]
-			E := adapter.Copy(clipboardContentIfIsFile)
+			E := adapterObj.Copy(clipboardContentIfIsFile)
 			if E != nil {
 				logger.Fatalf("adapter.Copy error:%v", E)
 
@@ -79,9 +80,9 @@ func mainLoop(conf *model.Conf, adapter model.ClipboardCmdAdapter, client *http.
 			continue
 		}
 		// else: previousClipboardHistoryidx == 0, detect whether the current clipboard is updated.
-		currentClipboard, E := adapter.Paste()
+		currentClipboard, E := adapterObj.Paste()
 		if E != nil {
-			if E == model.ErrEmptyClipboard {
+			if E == adapter.ErrEmptyClipboard {
 				logger.Infof(`adapter.Paste error:%v ,set empty string clipboard.`, E)
 				currentClipboard = ""
 			} else {

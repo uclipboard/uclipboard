@@ -17,13 +17,14 @@ type Conf struct {
 	} `toml:"client"`
 
 	Server struct {
-		DBPath          string `toml:"db_path"`
-		PullHistorySize int    `toml:"pull_history_size"`
-		TmpPath         string `toml:"tmp_path"`
-		DefaultFileLife int64  `toml:"default_file_life"`
-		TimerInterval   int    `toml:"timer_interval"`
-		MaxHistorySize  int    `toml:"max_history_size"`
-		Port            int    `toml:"port"`
+		DBPath                   string `toml:"db_path"`
+		PullHistorySize          int    `toml:"pull_history_size"`
+		TmpPath                  string `toml:"tmp_path"`
+		DefaultFileLife          int64  `toml:"default_file_life"`
+		TimerInterval            int    `toml:"timer_interval"`
+		MaxHistorySize           int    `toml:"max_history_size"`
+		ClipboardHistoryPageSize int    `toml:"clipboard_history_page_size"`
+		Port                     int    `toml:"port"`
 	} `toml:"server"`
 
 	Runtime struct {
@@ -56,6 +57,7 @@ func NewConfWithDefault() *Conf {
 	c.Server.PullHistorySize = 5
 	c.Server.DefaultFileLife = 60 * 5
 	c.Server.Port = 8080
+	c.Server.ClipboardHistoryPageSize = 20
 	return &c
 }
 
