@@ -3,7 +3,6 @@ package client
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime"
@@ -78,17 +77,13 @@ func UploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 		logger.Fatalf("Read response body error: %v", err)
 	}
 	logger.Tracef("Response body: %s", respBody)
-	var data interface{}
-	err = json.Unmarshal(respBody, &data)
+	respData, err := ParseUploadInfomation(respBody)
 	if err != nil {
-		logger.Fatalf("Failed to unmarshal response body: %v", err)
+		logger.Fatalf("parse upload response body error: %v", err)
 	}
-	respData := data.(map[string]interface{})
-	if respData["message"] != "ok" {
-		logger.Fatalf("Got unexpected response message,response is: %s", string(respBody))
-	}
+
 	fmt.Printf("upload file success, file_id: %v, file_name: %v, life_time: %vs\n",
-		respData["file_id"], respData["filename"], respData["life_time"])
+		respData["file_id"], respData["file_name"], respData["life_time"])
 
 }
 

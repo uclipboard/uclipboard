@@ -31,7 +31,7 @@ Single app to implement both client and server
 - [x] not full cover test of file upload on X11 and Windows 
 - [x] test initial situation of DB 
 - [x] Authentication
-- [ ] Move all file operation to server.core.data
+- [ ] more strict level debug log and hint
 ## Bug/Feature
 - In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
 - Only support TEXT copy/paste, but support upload file.  

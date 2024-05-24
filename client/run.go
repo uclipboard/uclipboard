@@ -54,14 +54,13 @@ func Instant(c *model.Conf) {
 
 		respBody, err := SendPullReq(client, c)
 		if err != nil {
-			logger.Fatalf("cannot pull data  from server: %s", err.Error())
+			logger.Fatalf("cannot pull data from server: %s", err.Error())
 		}
 		logger.Tracef("respBody: %s", respBody)
 		clipboardArr, err := ParsePullData(respBody)
 		if err != nil {
 			logger.Fatalf("parse pull data error: %v", err)
 		}
-		// TODO:just directly jump into this branch
 		newContent := DeteckAndConcatFileUrl(c, &clipboardArr[0])
 		logger.Tracef("newContent: %s", newContent)
 		fmt.Println(newContent)

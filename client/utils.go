@@ -95,3 +95,17 @@ func ParsePullData(body []byte) (remoteClipboards []model.Clipboard, err error) 
 
 	return
 }
+
+func ParseUploadInfomation(body []byte) (info map[string]interface{}, err error) {
+	var bodyJson model.ServerResponse
+	if err = json.Unmarshal(body, &bodyJson); err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(bodyJson.Data, &info); err != nil {
+		return nil, err
+	}
+
+	return
+
+}

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"os"
 	"reflect"
 	"time"
@@ -59,16 +60,16 @@ func NewFileMetadataWithDefault() *FileMetadata {
 }
 
 type ServerResponse struct {
-	Message string      `json:"msg"`
-	Data    interface{} `json:"data"`
+	Msg  string          `json:"msg"`
+	Data json.RawMessage `json:"data"`
 }
 
-func NewDefaultServeRes(msg string, data interface{}) *ServerResponse {
+func NewDefaultServeRes(msg string, data []byte) *ServerResponse {
 	if msg == "" {
 		msg = "ok"
 	}
 	return &ServerResponse{
-		Message: msg,
-		Data:    data,
+		Msg:  msg,
+		Data: data,
 	}
 }
