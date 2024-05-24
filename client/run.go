@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -21,15 +20,15 @@ func Run(c *model.Conf) {
 	case "wc":
 		clipboardAdapter = adapter.NewWinClip()
 	default:
-		// win MacOS(pbcopy/paste)
+		// MacOS(pbcopy/paste)
 		logger.Fatal("error unknown clipboard adapter")
 	}
-	client := newUClipboardHttpClient()
+	client := NewUClipboardHttpClient()
 	mainLoop(c, clipboardAdapter, client)
 }
 
 func Instant(c *model.Conf) {
-	client := newUClipboardHttpClient()
+	client := NewUClipboardHttpClient()
 	logger := model.NewModuleLogger("instant")
 	argMsg := c.Runtime.Msg
 	// priority: binary file > pull data > argument message > stdin
@@ -37,7 +36,7 @@ func Instant(c *model.Conf) {
 	if c.Runtime.Upload != "" {
 		logger.Tracef("upload binary file: %s", c.Runtime.Upload)
 
-		uploadFile(c.Runtime.Upload, client, c, logger)
+		UploadFile(c.Runtime.Upload, client, c, logger)
 
 	} else if c.Runtime.Latest || c.Runtime.Download != "" {
 		logger.Tracef("download binary file. c.Flags.Latest:%t, c.Flags.Download:%s", c.Runtime.Latest, c.Runtime.Download)
@@ -48,21 +47,22 @@ func Instant(c *model.Conf) {
 		} else {
 			fileName = c.Runtime.Download
 		}
-		downloadFile(fileName, client, c, logger)
+		DownloadFile(fileName, client, c, logger)
 
 	} else if c.Runtime.Pull {
 		logger.Trace("pull clipboard from server")
 
-		var clipboardArr []model.Clipboard
-		resp, err := pullStringData(client, c, logger)
+		respBody, err := SendPullReq(client, c)
 		if err != nil {
 			logger.Fatalf("cannot pull data  from server: %s", err.Error())
 		}
-		logger.Tracef("resp: %s", resp)
-		if err = json.Unmarshal(resp, &clipboardArr); err != nil {
-			logger.Fatalf("cannot parse response body: %s", err.Error())
+		logger.Tracef("respBody: %s", respBody)
+		clipboardArr, err := ParsePullData(respBody)
+		if err != nil {
+			logger.Fatalf("parse pull data error: %v", err)
 		}
-		newContent := deteckAndconcatClipboardFileUrl(c, &clipboardArr[0])
+		// TODO:just directly jump into this branch
+		newContent := DeteckAndConcatFileUrl(c, &clipboardArr[0])
 		logger.Tracef("newContent: %s", newContent)
 		fmt.Println(newContent)
 
@@ -74,14 +74,18 @@ func Instant(c *model.Conf) {
 		}
 
 		if len(in) != 0 {
-			uploadStringData(string(in), client, c, logger)
+			if err := SendPushReq(string(in), client, c); err != nil {
+				logger.Fatalf("send push request error: %v", err)
+			}
 		} else {
 			logger.Fatal("nothing readed")
 		}
 
 	} else if argMsg != "" {
 		logger.Tracef("upload argument message: %s", argMsg)
-		uploadStringData(argMsg, client, c, logger)
+		if err := SendPushReq(argMsg, client, c); err != nil {
+			logger.Fatalf("send push request error:%v", err)
+		}
 	}
 
 }

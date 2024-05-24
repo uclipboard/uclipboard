@@ -1,9 +1,6 @@
 package client
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
 	"net/http"
 	"time"
 
@@ -17,31 +14,28 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 	for {
 		time.Sleep(time.Duration(conf.Client.Interval) * time.Millisecond) //sleep first to avoid the possible occured error then it skip sleep
 
-		// It's not a good idea to use PullStringData
-		// because I need the error infomation to skip current look
-		pullApi := model.UrlPullApi(conf)
-		resp, err := client.Get(pullApi)
+		body, err := SendPullReq(client, conf)
 		if err != nil {
-			logger.Warnf("error sending request: %s", err)
-			continue
-		}
-		if resp.StatusCode != http.StatusOK {
-			logger.Warnf("error response status: %s", resp.Status)
-			resp.Body.Close()
+			logger.Warnf("send pull request error: %v", err)
+			if err == ErrUnexpectRespStatus {
+				serverMsg, err := ExtractErrorMsg(body)
+				if err != nil {
+					logger.Warnf("extrace error msg error: %s", serverMsg)
+					continue
+				}
+				logger.Warnf("receive server msg: %s", serverMsg)
+			}
 			continue
 		}
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			logger.Fatalf("error reading response body: %s", err)
-		}
-
-		var remoteClipboards []model.Clipboard
 		logger.Tracef("response body: %s", string(body))
-		if err := json.Unmarshal(body, &remoteClipboards); err != nil {
-			logger.Fatalf("cannot parse response body: %s", err.Error())
-		}
 
+		remoteClipboards, err := ParsePullData(body)
+		if err != nil {
+			logger.Warnf("error parsing response body: %s", err)
+			continue
+		}
+		logger.Tracef("remoteClipboards: %v", remoteClipboards)
 		// Now we just ignore the conflict when all of those are different
 		// Why do we need `previousClipboardHistoryidx`?
 		// Consider the following situation
@@ -55,7 +49,7 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 		// even though text1 is same as previous text1
 
 		previousClipboardHistoryidx := model.IndexClipboardArray(remoteClipboards, &previousClipboard)
-		clipboardContentIfIsFile := deteckAndconcatClipboardFileUrl(conf, &remoteClipboards[0])
+		clipboardContentIfIsFile := DeteckAndConcatFileUrl(conf, &remoteClipboards[0])
 
 		if previousClipboardHistoryidx == -1 {
 			previousClipboard = remoteClipboards[0]
@@ -70,7 +64,7 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 			logger.Tracef("previousClipboard.Content: %s", previousClipboard.Content)
 			continue
 		} else if previousClipboardHistoryidx > 0 {
-			logger.Infof("Pull <= %v [%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
+			logger.Infof("(PULL <=) %v [%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
 			previousClipboard = remoteClipboards[0]
 			E := adapterObj.Copy(clipboardContentIfIsFile)
 			if E != nil {
@@ -97,27 +91,17 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 			continue
 		}
 
-		logger.Tracef("previousClipboard.Content is %v\n", []byte(previousClipboard.Content))
-		logger.Tracef("currentClipboard is %v\n", []byte(currentClipboard))
+		logger.Tracef("previousClipboard.Content bytes is %v\n", []byte(previousClipboard.Content))
+		logger.Tracef("currentClipboard bytes is %v\n", []byte(currentClipboard))
 		if previousClipboard.Content != currentClipboard {
 			if currentClipboard == clipboardContentIfIsFile {
 				logger.Debug("currentClipboard is file url clipboard, skip push")
 				continue
 			}
-			logger.Infof("Push => %s", currentClipboard)
-			// It's not good idea to use UploadStringData function because I need wrappedClipboard
-			reqBody, wrappedClipboard := genClipboardReqBody(currentClipboard, logger)
-			// update Clipboard
-			logger.Tracef("previousClipboard=wrappedClipboard: %v", wrappedClipboard)
-			previousClipboard = *wrappedClipboard
-
-			resp, err := client.Post(model.UrlPushApi(conf),
-				"application/json", bytes.NewReader(reqBody))
-
-			if err != nil {
-				logger.Fatalf("push clipboard error: %s", err.Error())
+			logger.Infof("(PUSH =>) %s", currentClipboard)
+			if err := SendPushReq(currentClipboard, client, conf); err != nil {
+				logger.Warnf("send push request error: %v", err)
 			}
-			resp.Body.Close()
 			continue
 		}
 
