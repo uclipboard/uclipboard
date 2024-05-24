@@ -34,6 +34,8 @@ func main() {
 	if conf.Token == "" {
 		logger.Fatal("token is empty, please set token in conf file.")
 	}
+	conf = model.FormatConf(conf)
+
 	conf.Runtime.TokenEncrypt = model.TokenEncrypt(conf.Token)
 
 	logger.Debugf("running Mode: %s", conf.Runtime.Mode)
