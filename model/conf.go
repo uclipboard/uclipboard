@@ -36,6 +36,7 @@ type Conf struct {
 		Upload       string
 		Pull         bool
 		Latest       bool
+		Dev          bool
 		TokenEncrypt string
 	}
 }

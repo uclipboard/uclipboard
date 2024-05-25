@@ -88,10 +88,12 @@ func Run(c *model.Conf) {
 		v0 := api.Group(model.ApiVersion)
 		publicV0 := v0.Group(model.ApiPublic)
 
-		if !c.Runtime.Dev {
+		if c.Runtime.Dev {
 			corsConfig := cors.DefaultConfig()
 			corsConfig.AllowAllOrigins = true
-			v0.Use(ginAuthMiddle(c), cors.New(corsConfig))
+			v0.Use(cors.New(corsConfig))
+		} else {
+			v0.Use(ginAuthMiddle(c))
 		}
 
 		v0.GET(model.Api_Pull, HandlerPull(c))

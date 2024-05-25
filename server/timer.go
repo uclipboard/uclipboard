@@ -13,7 +13,7 @@ func TimerGC(conf *model.Conf) {
 	interval := time.Duration(conf.Server.TimerInterval) * time.Second
 	for {
 		// Get the current time
-		now := time.Now().Unix()
+		now := time.Now().UnixMilli()
 		// Query the database for expired files
 		expiredFiles, err := core.QueryExpiredFiles(conf, now)
 		if err != nil {
