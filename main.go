@@ -23,6 +23,7 @@ func main() {
 			"You can also specify file id by @id to download the file you want. e.g. -download @123")
 	flag.BoolVar(&conf.Runtime.Pull, "pull", false, "(instant mode) pull clipboard data.")
 	flag.BoolVar(&conf.Runtime.Latest, "latest", false, "(instant mode) download latest file.")
+	flag.BoolVar(&conf.Runtime.Dev, "dev", false, "dev mode, no token and allow all origins.")
 
 	flag.Parse()
 	model.LoggerInit(conf.Runtime.LogLevel)
@@ -31,10 +32,11 @@ func main() {
 
 	// modify config struct by conf file
 	conf = model.LoadConf(conf)
-	if conf.Token == "" {
+	conf = model.FormatConf(conf)
+
+	if conf.Token == "" && !conf.Runtime.Dev {
 		logger.Fatal("token is empty, please set token in conf file.")
 	}
-	conf = model.FormatConf(conf)
 
 	conf.Runtime.TokenEncrypt = model.TokenEncrypt(conf.Token)
 

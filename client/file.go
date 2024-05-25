@@ -106,14 +106,21 @@ func DownloadFile(fileId string, client *http.Client, c *model.Conf, logger *log
 		return
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode == http.StatusNotFound {
+		fmt.Printf("file not found!\n")
+		return
+	} else if res.StatusCode != http.StatusOK {
 		// print response body
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			logger.Fatalf("read response body error when response stats code is not OK: %v", err)
 		}
 		logger.Tracef("response body: %s", body)
-		logger.Fatalf("download file failed, status_code %d, response_body: %v", res.StatusCode, string(body))
+		msg, err := ExtractErrorMsg(body)
+		if err != nil {
+			logger.Fatalf("extract error message error: %v", err)
+		}
+		logger.Fatalf("download file failed, status_code %d, msg: %v", res.StatusCode, msg)
 	}
 	contentDisposition := res.Header.Get("Content-Disposition")
 	logger.Tracef("Content-Disposition: %s", contentDisposition)

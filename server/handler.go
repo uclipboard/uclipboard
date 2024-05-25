@@ -24,6 +24,10 @@ func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("request is invalid.", nil))
 			return
 		}
+		if clipboardData.Content == "" {
+			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("content is empty", nil))
+			return
+		}
 		if err := core.AddClipboardRecord(clipboardData); err != nil {
 			logger.Tracef("AddClipboardRecord error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("add clipboard record error", nil))
@@ -128,6 +132,11 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 		metadata := model.NewFileMetadataWithDefault()
 		if fileName == "" {
 			if err := core.GetFileMetadataLatestRecord(metadata); err != nil {
+				if err == sql.ErrNoRows {
+					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("file not found", nil))
+					return
+				}
+
 				logger.Tracef("GetFileMetadataLatestRecord error: %v", err)
 				ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get the latest file metadata record error", nil))
 				return

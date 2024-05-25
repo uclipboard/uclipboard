@@ -32,6 +32,7 @@ Single app to implement both client and server
 - [x] test initial situation of DB 
 - [x] Authentication
 - [ ] more strict level debug log and hint
+- [ ] project icon
 ## Bug/Feature
 - In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
 - Only support TEXT copy/paste, but support upload file.  

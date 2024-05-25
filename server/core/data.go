@@ -92,7 +92,7 @@ func AddClipboardRecord(c *model.Clipboard) (err error) {
 }
 
 func QueryLatestClipboardRecord(N int) (clipboards []model.Clipboard, err error) {
-	logger.Tracef("call GetLatestClipboardRecord(%v)", clipboards)
+	logger.Tracef("call GetLatestClipboardRecord(%v)", N)
 	err = DB.Select(&clipboards, fmt.Sprintf(getLatestClipboard, N))
 	return
 }

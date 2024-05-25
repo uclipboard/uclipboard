@@ -9,6 +9,7 @@ import (
 
 	"github.com/dangjinghao/uclipboard/model"
 	"github.com/dangjinghao/uclipboard/server/core"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -81,12 +82,18 @@ func Run(c *model.Conf) {
 
 	r := gin.New()
 	r.Use(ginLoggerMiddle())
+
 	api := r.Group(model.ApiPrefix)
 	{
 		v0 := api.Group(model.ApiVersion)
 		publicV0 := v0.Group(model.ApiPublic)
 
-		v0.Use(ginAuthMiddle(c))
+		if !c.Runtime.Dev {
+			corsConfig := cors.DefaultConfig()
+			corsConfig.AllowAllOrigins = true
+			v0.Use(ginAuthMiddle(c), cors.New(corsConfig))
+		}
+
 		v0.GET(model.Api_Pull, HandlerPull(c))
 		v0.GET(model.Api_History, HandlerHistory(c))
 		v0.POST(model.Api_Push, HandlerPush(c))
