@@ -36,7 +36,7 @@ func GetMD5Hash(text string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-const encryptSalt = "uclipbard:%s"
+const encryptSalt = "uclipboard:%s"
 
 func TokenEncrypt(token string) string {
 	// encrypt token with 3 pheases md5
