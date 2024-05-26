@@ -82,17 +82,18 @@ func Run(c *model.Conf) {
 
 	r := gin.New()
 	r.Use(ginLoggerMiddle())
-
+	if c.Runtime.Dev {
+		corsConfig := cors.DefaultConfig()
+		corsConfig.AllowAllOrigins = true
+		corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "hostname")
+		r.Use(cors.New(corsConfig))
+	}
 	api := r.Group(model.ApiPrefix)
 	{
 		v0 := api.Group(model.ApiVersion)
 		publicV0 := v0.Group(model.ApiPublic)
 
-		if c.Runtime.Dev {
-			corsConfig := cors.DefaultConfig()
-			corsConfig.AllowAllOrigins = true
-			v0.Use(cors.New(corsConfig))
-		} else {
+		if !c.Runtime.Dev {
 			v0.Use(ginAuthMiddle(c))
 		}
 
