@@ -18,12 +18,13 @@ import (
 func ginLoggerMiddle() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
-		status := c.Writer.Status()
 		ip := c.ClientIP()
 		ua := c.Request.UserAgent()
 		start := time.Now()
 		c.Next()
 		stop := time.Since(start)
+		status := c.Writer.Status()
+
 		lat := int(math.Ceil(float64(stop.Nanoseconds()) / 1000000.0))
 		dataLength := c.Writer.Size()
 
