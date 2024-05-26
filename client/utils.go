@@ -22,24 +22,24 @@ func GenClipboardReqBody(c string) ([]byte, *model.Clipboard, error) {
 	return reqBody, reqData, nil
 }
 
-func SendPushReq(s string, client *http.Client, c *model.Conf) error {
-	reqBody, _, err := GenClipboardReqBody(s)
+func SendPushReq(s string, client *http.Client, c *model.Conf) (*model.Clipboard, error) {
+	reqBody, clipboardInstance, err := GenClipboardReqBody(s)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resp, err := client.Post(model.UrlPushApi(c),
 		"application/json", bytes.NewReader(reqBody))
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return ErrUnexpectRespStatus
+		return nil, ErrUnexpectRespStatus
 	}
 
-	return nil
+	return clipboardInstance, nil
 }
 
 func SendPullReq(client *http.Client, c *model.Conf) ([]byte, error) {

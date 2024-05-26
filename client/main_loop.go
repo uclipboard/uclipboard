@@ -99,9 +99,12 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 				continue
 			}
 			logger.Infof("(PUSH =>) %s", currentClipboard)
-			if err := SendPushReq(currentClipboard, client, conf); err != nil {
+			var wrappedCLipboard *model.Clipboard
+			if wrappedCLipboard, err = SendPushReq(currentClipboard, client, conf); err != nil {
 				logger.Warnf("send push request error: %v", err)
+				continue
 			}
+			previousClipboard = *wrappedCLipboard
 			continue
 		}
 

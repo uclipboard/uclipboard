@@ -73,7 +73,7 @@ func Instant(c *model.Conf) {
 		}
 
 		if len(in) != 0 {
-			if err := SendPushReq(string(in), client, c); err != nil {
+			if _, err := SendPushReq(string(in), client, c); err != nil {
 				logger.Fatalf("send push request error: %v", err)
 			}
 		} else {
@@ -82,7 +82,7 @@ func Instant(c *model.Conf) {
 
 	} else if argMsg != "" {
 		logger.Tracef("upload argument message: %s", argMsg)
-		if err := SendPushReq(argMsg, client, c); err != nil {
+		if _, err := SendPushReq(argMsg, client, c); err != nil {
 			logger.Fatalf("send push request error:%v", err)
 		}
 	}
