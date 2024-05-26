@@ -56,7 +56,7 @@ func NewConfWithDefault() *Conf {
 	c.Server.TmpPath = "./tmp/"
 	c.Server.TimerInterval = 60
 	c.Server.PullHistorySize = 5
-	c.Server.DefaultFileLife = 60 * 5
+	c.Server.DefaultFileLife = 60 * 5 * 1000 //ms
 	c.Server.Port = 8080
 	c.Server.ClipboardHistoryPageSize = 20
 	return &c
@@ -81,6 +81,6 @@ func FormatConf(conf *Conf) *Conf {
 	if conf.Client.ServerUrl[len(conf.Client.ServerUrl)-1] == '/' {
 		conf.Client.ServerUrl = conf.Client.ServerUrl[:len(conf.Client.ServerUrl)-1]
 	}
-
+	conf.Server.DefaultFileLife *= 1000
 	return conf
 }

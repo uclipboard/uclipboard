@@ -111,7 +111,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		}
 		logger.Debugf("The new file id is %v", fileId)
 		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
-			"life_time": conf.Server.DefaultFileLife})
+			"life_time": conf.Server.DefaultFileLife / 1000}) // ms -> s
 		if err != nil {
 			logger.Tracef("Marshal response data error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("marshal response data error", nil))
