@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dangjinghao/uclipboard/model"
@@ -83,7 +84,8 @@ func Run(c *model.Conf) {
 
 	r := gin.New()
 	r.Use(ginLoggerMiddle())
-	if c.Runtime.Dev {
+	if strings.Contains(c.Runtime.Test, "c") {
+		logger.Warn("Allow all cors request")
 		corsConfig := cors.DefaultConfig()
 		corsConfig.AllowAllOrigins = true
 		corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "hostname")
@@ -94,8 +96,11 @@ func Run(c *model.Conf) {
 		v0 := api.Group(model.ApiVersion)
 		publicV0 := v0.Group(model.ApiPublic)
 
-		if !c.Runtime.Dev {
+		if !strings.Contains(c.Runtime.Test, "t") {
+			logger.Debugf("Token: %s and server will use it", c.Runtime.TokenEncrypt)
 			v0.Use(ginAuthMiddle(c))
+		} else {
+			logger.Warnf("Token check is disabled")
 		}
 
 		v0.GET(model.Api_Pull, HandlerPull(c))
