@@ -1,0 +1,14 @@
+token = "token" #necessary, modify it for your security!
+[client]
+server_url = "http://example.com:4533/" #necessary
+connect = "http" #todo
+adapter = "wl" #necessary, wl/xc/wc wl: wl-clipboard, xc: xclip, wc: win-clip
+interval = 2000 #ms
+X_selection = "clipboard" # select the clipboard which you want to copy/paste in xc adapter
+[server]
+pull_history_size = 5 # the number of items return by server in the pull api 
+port = 4533 
+tmp_path = "./tmp/" #temporary uploaded file path
+default_file_life = 300 #seconds, temporary uploaded file life
+timer_interval = 60 #seconds, the interval of rubbish cleaner timer
+clipboard_history_page_size = 10 # the number of items per page in history api

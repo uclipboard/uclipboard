@@ -1,28 +1,56 @@
-# uClipboard
-This is a cross-platform clipboard client/server
+# uclipboard
+A self-hosted cross-platform unified clipboard sychronize program.
 
-**Still developing...**
+**Warning: this program is still under development, API is not stable**
 
-# Plan
-## Client 
-### Platform
-- [x] Windows (my win-clipboard) https://github.com/dangjinghao/win-clip
-- [x] **Linux**/BSD/Any other go supports platform with X display Protocol(xclip)
-- [x] **Linux**/BSD/Any other go supports platform with Wayland display Protocol(wl-clipboard)
-- [x] web UI
-- [ ] Android APK (fulture)
-- [ ] Mac OS X (fulture / I don't have any Apple device :-( )
-- [ ] Chrome OS (fulture)
-*To now, the tested platforms are Windows and Linux (with X or wayland) I don't have BSD device with disply service*
-## Server
-### Platform
-- Same as before 
-### API supports
+## Feature
+- Copy a piece of text on one device, synchronize it to all connected devices.
+- Upload a file and synchronize the download link to every connected device
+
+## Supported Platforms
+- [x] Windows: clipboard access supported by [win-clip](https://github.com/uclipboard/win-clip)
+- [x] X Display Protocol: clipboard access supported by xclip
+- [x] Wayland Display Protocol: clipboard access supported by wl-clipboard
+- [x] web UI (built-in)
+- [ ] Mac OS X (fulture, but I don't have any Apple device :-\( )
+
+*To now, the tested platforms are Windows and Linux (with X and wayland). I don't have BSD device with disply service so can't test this combination.*
+
+## How to Start
+1. Specify and install the clipboard adapter
+    - Windows: [win-clip](https://github.com/uclipboard/win-clip)
+    - Wayland Display Protocol: install `wl-clipboard` by package manager or something 
+    - X Display Protocol: install `xclip` by package manager or something
+2. Download this applicaton for your platform from release.
+3. The program contains client and server implementation, so you have to download it on both your server and client.
+4. Write the minimum config file `conf.toml`
+```toml
+token = "token" #necessary, modify it for your security!
+[client]
+server_url = "http://example:4533/" #necessary for clipent
+adapter = "wl" #necessary, wl/xc/wc wl: wl-clipboard, xc: xclip, wc: win-clip
+# X_selection = "clipboard" # select the clipboard which you want to copy/paste in xc mode
+# check out `conf.full.toml` for more infomation
+```
+5. Run `server mode` on your server by execute `./uclipboard --mode server` 
+    - If the `conf.toml` doesn't exist in the same directory of uclipboard program, you can indicate uclipboard to load a specific config file by execute `./uclipboard --mode server --conf /path/to/conf`
+6. Run `client mode` on your laptop or PC by execute `./uclipboard --mode client`
+    - you can directly copy previous `conf.toml` file as the `client mode` config file
+
+## Supported Instant Operations
+- pull the latest clipboard msg: `./uclipboard --pull`
+- push clipboard msg to all devices: `./uclipboard --msg "hello world"`
+- push clipboard msg by reading from stdin: `echo hello world|./uclipboard`
+- upload file: `./uclipboard --upload /path/to/file`
+- download file: `./uclipboard --download [file name]`
+- download latest file: `./uclipboard --latest `
+- download file by id: `./uclipboard --download @[id]`
+
+## Contribute
+**BUILDING**
+## API supports
 - [x] HTTP API
 - [ ] WS API (fulture)
-
-## Single Application
-Single app to implement both client and server
 
 ## TODOLIST
 - [x] Hostname source support
@@ -31,12 +59,12 @@ Single app to implement both client and server
 - [x] not full cover test of file upload on X11 and Windows 
 - [x] test initial situation of DB 
 - [x] Authentication
-- [ ] project icon
-- [ ] web integration development && build
+- [x] project icon (Thanks to GitHub `identicon`)
 - [ ] more strict level debug log and hint
+- [ ] web integration development && build
 - [ ] cross-platform test
+
 ## Bug/Feature
 - In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
-- Only support TEXT copy/paste, but support upload file.  
-- On X11, if the system clipboard is empty, this app may exit with msg: `adapter.Paste error:exit status 1`. You can copy any text to your clipboard then rerun it
+- uclipboard only supports TEXT copy/paste,**DO NOT** print binary file to the stdin of uclipboard. it is undefined behavior. But uclipboard supports upload file.  
 - There is only `\n` in our db as newline rather than `\r\n`. So win-clip adapter will automaticlly switch them on Windows
