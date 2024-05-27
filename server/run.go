@@ -10,6 +10,7 @@ import (
 
 	"github.com/dangjinghao/uclipboard/model"
 	"github.com/dangjinghao/uclipboard/server/core"
+	"github.com/dangjinghao/uclipboard/server/frontend"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -67,10 +68,12 @@ func ginAuthMiddle(conf *model.Conf) gin.HandlerFunc {
 }
 
 func Run(c *model.Conf) {
+	logger := model.NewModuleLogger("http")
 	core.InitDB(c)
+	frontend.InitFrontend()
+
 	go TimerGC(c)
 
-	logger := model.NewModuleLogger("http")
 	switch c.Runtime.LogLevel {
 	case "debug":
 		fallthrough
@@ -91,6 +94,17 @@ func Run(c *model.Conf) {
 		corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "hostname")
 		r.Use(cors.New(corsConfig))
 	}
+
+	// icon
+	r.StaticFileFS("/favicon.ico", "favicon.ico", frontend.AssetsFS())
+	// index or anything
+	r.NoRoute(func(c *gin.Context) {
+		c.FileFromFS("/", frontend.FrontendRootFS())
+	})
+	// assets
+	r.StaticFS("/assets", frontend.AssetsFS())
+
+	// api
 	api := r.Group(model.ApiPrefix)
 	{
 		v0 := api.Group(model.ApiVersion)

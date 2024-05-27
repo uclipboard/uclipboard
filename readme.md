@@ -9,7 +9,7 @@ This is a cross-platform clipboard client/server
 - [x] Windows (my win-clipboard) https://github.com/dangjinghao/win-clip
 - [x] **Linux**/BSD/Any other go supports platform with X display Protocol(xclip)
 - [x] **Linux**/BSD/Any other go supports platform with Wayland display Protocol(wl-clipboard)
-- [ ] web UI
+- [x] web UI
 - [ ] Android APK (fulture)
 - [ ] Mac OS X (fulture / I don't have any Apple device :-( )
 - [ ] Chrome OS (fulture)
@@ -31,8 +31,10 @@ Single app to implement both client and server
 - [x] not full cover test of file upload on X11 and Windows 
 - [x] test initial situation of DB 
 - [x] Authentication
-- [ ] more strict level debug log and hint
 - [ ] project icon
+- [ ] web integration development && build
+- [ ] more strict level debug log and hint
+- [ ] cross-platform test
 ## Bug/Feature
 - In instant mode, you are not allowed to push clipboard cotent with "" (specific `-m ""` argument but in fact it is *empty* string)
 - Only support TEXT copy/paste, but support upload file.  
