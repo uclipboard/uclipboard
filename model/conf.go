@@ -2,6 +2,7 @@ package model
 
 import (
 	"os"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -57,7 +58,7 @@ func NewConfWithDefault() *Conf {
 	c.Server.TimerInterval = 60
 	c.Server.PullHistorySize = 5
 	c.Server.DefaultFileLife = 60 * 5 * 1000 //ms
-	c.Server.Port = 8080
+	c.Server.Port = 4533
 	c.Server.ClipboardHistoryPageSize = 20
 	return &c
 }
@@ -78,9 +79,20 @@ func LoadConf(conf *Conf) *Conf {
 
 func FormatConf(conf *Conf) *Conf {
 	// delete the last '/' of server url
-	if conf.Client.ServerUrl[len(conf.Client.ServerUrl)-1] == '/' {
+	if len(conf.Client.ServerUrl) > 0 && conf.Client.ServerUrl[len(conf.Client.ServerUrl)-1] == '/' {
 		conf.Client.ServerUrl = conf.Client.ServerUrl[:len(conf.Client.ServerUrl)-1]
 	}
 	conf.Server.DefaultFileLife *= 1000
 	return conf
+}
+
+func CheckConf(conf *Conf) {
+	logger := NewModuleLogger("config_checker")
+	if conf.Token == "" && !strings.Contains(conf.Runtime.Test, "t") {
+		logger.Fatal("token is empty, please set token in conf file.")
+	}
+	if conf.Client.ServerUrl == "" {
+		logger.Fatal("server url is empty, please set server url in conf file.")
+	}
+
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"strings"
 
 	"github.com/dangjinghao/uclipboard/client"
 	"github.com/dangjinghao/uclipboard/model"
@@ -35,10 +34,7 @@ func main() {
 	conf = model.LoadConf(conf)
 	conf = model.FormatConf(conf)
 
-	if conf.Token == "" && !strings.Contains(conf.Runtime.Test, "t") {
-		logger.Fatal("token is empty, please set token in conf file.")
-	}
-
+	model.CheckConf(conf)
 	conf.Runtime.TokenEncrypt = model.TokenEncrypt(conf.Token)
 
 	logger.Debugf("running Mode: %s", conf.Runtime.Mode)
