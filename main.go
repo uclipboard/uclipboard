@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/dangjinghao/uclipboard/client"
 	"github.com/dangjinghao/uclipboard/model"
@@ -11,10 +14,18 @@ import (
 func main() {
 	// create default config struct
 	conf := model.NewConfWithDefault()
-	// modify the `run` config struct
+
+	// get the running program path
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+
+	// modify the `Runtime` config struct
 	flag.StringVar(&conf.Runtime.Mode, "mode", "instant", "Specify the running mode. (client|server|instant)")
 	flag.StringVar(&conf.Runtime.LogLevel, "log-level", "info", "logger level [info/debug/trace]")
-	flag.StringVar(&conf.Runtime.ConfPath, "conf", "./conf.toml", "Specify the config path.")
+	flag.StringVar(&conf.Runtime.ConfPath, "conf", fmt.Sprintf("%s/conf.toml", exPath), "Specify the config path.")
 	flag.StringVar(&conf.Runtime.Msg, "msg", "", "(instant mode) push clipboard data.")
 	flag.StringVar(&conf.Runtime.Upload, "upload", "", "(instant mode) upload what ever file you want.")
 	flag.StringVar(&conf.Runtime.Download, "download", "",
