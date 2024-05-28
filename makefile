@@ -21,7 +21,7 @@ build: $(BUILD_DIR)/$(TARGET)
 all: $(SRCS) $(FRONTEND_DIST)/index.html
 	@mkdir -p $(BUILD_DIR)
 	@echo "multi-platform compiling..."
-	@./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
+	@bash ./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
 
 
 $(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
