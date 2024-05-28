@@ -10,7 +10,7 @@ type WinClip struct {
 }
 
 func (WC *WinClip) Copy(s string) error {
-	copyCmd := exec.Command("./win-clip.exe", "copy", "-u")
+	copyCmd := exec.Command("win-clip.exe", "copy", "-u")
 	s = strings.ReplaceAll(s, "\n", "\r\n")
 	copyCmd.Stdin = bytes.NewBufferString(s)
 
@@ -23,7 +23,7 @@ func (WC *WinClip) Copy(s string) error {
 }
 
 func (WC *WinClip) Paste() (string, error) {
-	pasteCmd := exec.Command("./win-clip.exe", "paste", "-u")
+	pasteCmd := exec.Command("win-clip.exe", "paste", "-u")
 	var out bytes.Buffer
 	pasteCmd.Stdout = &out
 	stdErr := bytes.NewBuffer(nil)

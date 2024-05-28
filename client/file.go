@@ -52,15 +52,13 @@ func UploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 	if err != nil {
 		logger.Fatalf("NewRequest error: %v", err)
 	}
-	fileContentType := bodyWriter.FormDataContentType()
-	req.Header.Set("Content-Type", fileContentType)
+	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 
-	logger.Tracef("Content-Type: %s", fileContentType)
 	hostname, err := os.Hostname()
 	if err != nil {
 		logger.Warnf("Get hostname error: %v", err)
 	}
-	// set hostname to header
+	// add hostname to header
 	req.Header.Set("Hostname", hostname)
 
 	resp, err := client.Do(req)

@@ -18,7 +18,7 @@ A self-hosted cross-platform unified clipboard sychronize program.
 
 ## How to Start
 1. Specify and install the clipboard adapter
-    - Windows: [win-clip](https://github.com/uclipboard/win-clip)
+    - Windows: [win-clip](https://github.com/uclipboard/win-clip)(please add it's directory to PATH for executing it anywhere.)
     - Wayland Display Protocol: install `wl-clipboard` by package manager or something 
     - X Display Protocol: install `xclip` by package manager or something
 2. Download this applicaton for your platform from release.
@@ -61,7 +61,8 @@ adapter = "wl" #necessary, wl/xc/wc wl: wl-clipboard, xc: xclip, wc: win-clip
 - [x] Authentication
 - [x] project icon (Thanks to GitHub `identicon`)
 - [ ] more strict level debug log and hint
-- [ ] web integration development && build
+- [ ] web integration development && bettergmake build
+- [ ] history page
 - [ ] cross-platform test
 
 ## Bug/Feature
