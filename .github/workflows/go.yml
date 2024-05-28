@@ -19,7 +19,7 @@ jobs:
       with:
         submodules: true
     - name: setup go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version-file: './go.mod'
     - name: setup node 
@@ -43,3 +43,13 @@ jobs:
       shell: bash
       run: |
         make all
+  upload:
+    needs: "compile"
+    runs-on: ubuntu-latest
+    steps:
+     - name: archive compiled program
+       uses: actions/upload-artifact@v4
+       with:
+         name: uclipboard-${{ env.sha_short }}
+         path: ./build/*
+        
