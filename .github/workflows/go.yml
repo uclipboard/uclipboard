@@ -40,5 +40,6 @@ jobs:
       with:
         submodules: true
     - name: compile frontend
+      shell: bash
       run: |
         make all
