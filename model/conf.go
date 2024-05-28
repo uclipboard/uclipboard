@@ -91,7 +91,7 @@ func CheckConf(conf *Conf) {
 	if conf.Token == "" && !strings.Contains(conf.Runtime.Test, "t") {
 		logger.Fatal("token is empty, please set token in conf file.")
 	}
-	if conf.Client.ServerUrl == "" {
+	if conf.Client.ServerUrl == "" && conf.Runtime.Mode == "client" {
 		logger.Fatal("server url is empty, please set server url in conf file.")
 	}
 
