@@ -1,65 +1,54 @@
 GO := go
+YARN := yarn
 
-FRONTEND_REPO_URL := https://github.com/uclipboard/frontend
+GO_LDFLAGS := -ldflags="-s -w"
 
-PROJECT_DIR := .
-BUILD_DIR := $(PROJECT_DIR)/
-FRONTEND_DIR := $(PROJECT_DIR)/tmp/frontend
+BUILD_DIR := build
+FRONTEND_DIR := frontend-repo
+FRONTEND_DIST := server/frontend/dist
 
 SRCS := $(shell find . -type f -name "*.go")
-WEB_DIST := $(shell find $(PROJECT_DIR)/server/frontend/dist -type f )
+FRONTEND_SRCS := $(shell find $(FRONTEND_DIR)/src $(FRONTEND_DIR)/public -type f )
 
 TARGET := uclipboard
-TARGET_WIN := $(TARGET).exe
 
-BUILD_CMD := $(GO) build -ldflags="-s -w"  -o $(BUILD_DIR)/$(TARGET) $(PROJECT_DIR)
-BUILD_WIN_CMD := $(GO) build -ldflags="-s -w"  -o $(BUILD_DIR)/$(TARGET_WIN) $(PROJECT_DIR)
-
-GOOS_WIN=windows
-GOOS_LINUX=linux
-GOARCH_AMD64=amd64
+BUILD_CMD := $(GO) build -o $(BUILD_DIR)/$(TARGET) . #ignore optimization for debug
 
 LOG_LEVEL := info
 
-all: $(TARGET) $(TARGET_WIN)
+build: $(BUILD_DIR)/$(TARGET)
 
-$(TARGET): $(SRCS) $(WEB_DIST)
+all: $(SRCS) $(FRONTEND_DIST)/index.html
 	@mkdir -p $(BUILD_DIR)
-	@echo "building $(TARGET)"
-	@GOOS=$(GOOS_LINUX) GOARCH=$(GOARCH_AMD64)
-	@$(BUILD_CMD)
+	@echo "multi-platform compiling..."
+	@./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
 
-build-frontend-image:
-	@echo "building frontend image"
-	@echo "TODO: implement"
-build-frontend: | $(FRONTEND_DIR) build-frontend-image
-	@cd $(FRONTEND_DIR) && git pull
-	@echo "TODO: implement"
-	
-$(FRONTEND_DIR):
-	@echo "cloning frontend"
-	@git clone $(FRONTEND_REPO_URL) $(FRONTEND_DIR)
-	
-$(TARGET_WIN): $(SRCS) $(WEB_DIST)
+
+$(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
 	@mkdir -p $(BUILD_DIR)
-	@echo "cross-building $(TARGET_WIN)"
-	@GOOS=$(GOOS_WIN) GOARCH=$(GOARCH_AMD64)
-	@$(BUILD_WIN_CMD)
+	@echo "building $(TARGET) without any optimization"
+	@GOOS=linux GOARCH=amd64 $(BUILD_CMD)
+
+$(FRONTEND_DIST)/index.html: $(FRONTEND_SRCS) 
+	@echo "building frontend"
+	@cd $(FRONTEND_DIR) && $(YARN) install && $(YARN) build
+	@echo "moving frontend dist to server"
+	cp -rT $(FRONTEND_DIR)/dist/ $(FRONTEND_DIST)/
+
+
+build-frontend: $(FRONTEND_DIST)/index.html
 
 clean:
-	@rm -f $(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/$(TARGET_WIN)
-	@rm -rf $(PROJECT_DIR)/tmp/frontend
-	@rm -f  $(PROJECT_DIR)/server/frontend/dist/*
+	@rm -f $(BUILD_DIR)/*
+	@rm -rf $(FRONTEND_DIST)/*
 	
-run: $(TARGET)
-	@echo "run local clinet and server on tmux"
-	@sleep 1
+run: $(BUILD_DIR)/$(TARGET)
+	@echo "run one local clinet and server on tmux" && sleep 1
 	@tmux new-session -n run_uclipboard "$(SHELL) -c '$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL); $(SHELL)'"  \
 		\; split-window -h "$(SHELL) -c '$(BUILD_DIR)/$(TARGET) --mode client --log-level $(LOG_LEVEL); $(SHELL)'" 
-run-backend: $(TARGET)
+
+run-server: $(BUILD_DIR)/$(TARGET)
 	@echo "run local server"
 	@$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL)
 
-
-
-.PHONY: clean all run build-frontend-image build-frontend run-backend
+.PHONY: clean all run build-frontend run-server build
