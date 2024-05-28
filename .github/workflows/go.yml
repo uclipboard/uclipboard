@@ -14,6 +14,10 @@ jobs:
   base-env:
     runs-on: ubuntu-latest
     steps:
+    - name: basic setup
+      uses: actions/checkout@v4
+      with:
+        submodules: true
     - name: setup go
       uses: actions/setup-go@v4
       with:
