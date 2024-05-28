@@ -47,6 +47,7 @@ jobs:
     needs: "compile"
     runs-on: ubuntu-latest
     steps:
+     - run: tree . 
      - name: archive compiled program
        uses: actions/upload-artifact@v4
        with:
