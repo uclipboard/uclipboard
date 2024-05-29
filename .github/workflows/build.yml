@@ -26,17 +26,7 @@ jobs:
     - name: setup yarn
       run: |
         npm install --global yarn
-        yarn --version
-        
-  compile-upload:
-    needs: "build-env"
-    runs-on: ubuntu-latest
-    steps:
-    - name: basic setup
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-    - name: compile frontend
+    - name: compile
       shell: bash
       run: |
         make all
