@@ -24,6 +24,7 @@ bin: $(SRCS) $(FRONTEND_DIST)/index.html
 	@mkdir -p $(BUILD_DIR)
 	@echo "multi-platform compiling..."
 	@bash ./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
+	@bash ./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
 
 docker-image: bin
 	@echo "building container"
