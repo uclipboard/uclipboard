@@ -8,7 +8,7 @@ import (
 
 var logger = logrus.New()
 
-func LoggerInit(logInfo string) {
+func InitLogger(logInfo string) {
 	logger.SetFormatter(&logrus.TextFormatter{})
 	logger.SetOutput(os.Stdout)
 	switch logInfo {

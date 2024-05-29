@@ -9,10 +9,10 @@ ARG PLATFORM=linux-amd64
 COPY docker-entrypoint.sh /entrypoint.sh
 COPY ${BUILD_DIR}/uclipboard-${PLATFORM} ./uclipboard
 
-# RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
 
-RUN apt update && apt install bash -y && \
-    apt clean && \
+RUN apt-get update && apt-get install bash -y && \
+    apt-get clean && \
     chmod +x /entrypoint.sh && \
     chmod +x /app/uclipboard
 

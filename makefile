@@ -1,7 +1,8 @@
 GO := go
 YARN := yarn
+VERSION := $(shell git describe --tag)
 
-GO_LDFLAGS := -ldflags="-s -w"
+GO_LDFLAGS := "-X 'github.com/dangjinghao/uclipboard/model.Version=$(VERSION)' -s -w" 
 
 BUILD_DIR := build
 FRONTEND_DIR := frontend-repo
@@ -12,25 +13,26 @@ FRONTEND_SRCS := $(shell find $(FRONTEND_DIR)/src $(FRONTEND_DIR)/public -type f
 
 TARGET := uclipboard
 
-BUILD_CMD := $(GO) build -o $(BUILD_DIR)/$(TARGET) . #ignore optimization for debug
+TMP_BUILD_CMD := $(GO) build -ldflags="-X 'github.com/dangjinghao/uclipboard/model.Version=$(shell git describe --tags --always --dirty)'" -o $(BUILD_DIR)/$(TARGET) . #ignore optimization for debug
 
 LOG_LEVEL := info
 
 build: $(BUILD_DIR)/$(TARGET)
-
-all: $(SRCS) $(FRONTEND_DIST)/index.html
+all: bin docker-image
+bin: $(SRCS) $(FRONTEND_DIST)/index.html
+	@echo "uclipboard version: $(VERSION)"
 	@mkdir -p $(BUILD_DIR)
 	@echo "multi-platform compiling..."
 	@bash ./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
 
-docker-image: all
+docker-image: bin
 	@echo "building container"
-	@docker build -t djh233/uclipboard .
+	@docker build -t djh233/uclipboard:$(VERSION) .
 	
 $(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
 	@mkdir -p $(BUILD_DIR)
 	@echo "building $(TARGET) without any optimization"
-	@GOOS=linux GOARCH=amd64 $(BUILD_CMD)
+	@GOOS=linux GOARCH=amd64 $(TMP_BUILD_CMD)
 
 $(FRONTEND_DIST)/index.html: $(FRONTEND_SRCS) 
 	@echo "building frontend"
@@ -54,4 +56,4 @@ run-server: $(BUILD_DIR)/$(TARGET)
 	@echo "run local server"
 	@$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL)
 
-.PHONY: clean all run build-frontend run-server build docker-image
+.PHONY: clean all run build-frontend run-server build docker-image bin

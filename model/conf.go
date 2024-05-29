@@ -7,6 +7,8 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+var Version string = "v0.0.0"
+
 type Conf struct {
 	Token  string `toml:"token"`
 	Client struct {
@@ -38,6 +40,7 @@ type Conf struct {
 		Latest       bool
 		Test         string
 		TokenEncrypt string
+		ShowVersion  bool
 	}
 }
 
