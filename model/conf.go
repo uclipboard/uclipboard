@@ -41,6 +41,7 @@ type Conf struct {
 		Test         string
 		TokenEncrypt string
 		ShowVersion  bool
+		LogPath      string
 	}
 }
 

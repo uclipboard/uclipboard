@@ -19,7 +19,7 @@ func main() {
 		os.Exit(0)
 	}
 	// before InitLogger, we can't use logger
-	model.InitLogger(conf.Runtime.LogLevel)
+	model.InitLogger(conf)
 	// modify config struct by conf file
 	conf = model.LoadConf(conf)
 	conf = model.FormatConf(conf)
