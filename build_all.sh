@@ -21,7 +21,7 @@ for osarch in "${GOOSARCHS[@]}"; do
     if [ "$GOOS" == "windows" ]; then
         full_name+=".exe"
     fi
-    echo "Building $full_name"
-    GOOS=$GOOS GOARCH=$GOARCH go build -o $full_name .
+    echo "Building $full_name with $ldflags"
+    GOOS=$GOOS GOARCH=$GOARCH go build -o $full_name  -ldflags="$ldflags" .
 done
 
