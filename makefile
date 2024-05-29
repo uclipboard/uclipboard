@@ -1,6 +1,6 @@
 GO := go
 YARN := yarn
-VERSION := $(shell git describe --tag)
+VERSION := $(shell git describe --tags --abbrev=0)
 
 GO_LDFLAGS := "-X 'github.com/dangjinghao/uclipboard/model.Version=$(VERSION)' -s -w" 
 
