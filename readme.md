@@ -63,6 +63,7 @@ adapter = "wl" #necessary, wl/xc/wc wl: wl-clipboard, xc: xclip, wc: win-clip
 - [x] web integration development && better gmake build
 - [x] add version
 - [x] long interval when network connection is down and recover the interval after connection recovered
+- [ ] upload docker container automatically after every release
 - [ ] more strict level debug log and hint
 - [ ] history page
 - [ ] cross-platform test
