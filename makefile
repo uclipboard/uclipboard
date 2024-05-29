@@ -23,7 +23,10 @@ all: $(SRCS) $(FRONTEND_DIST)/index.html
 	@echo "multi-platform compiling..."
 	@bash ./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
 
-
+docker-image: all
+	@echo "building container"
+	@docker build -t djh233/uclipboard .
+	
 $(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
 	@mkdir -p $(BUILD_DIR)
 	@echo "building $(TARGET) without any optimization"
@@ -51,4 +54,4 @@ run-server: $(BUILD_DIR)/$(TARGET)
 	@echo "run local server"
 	@$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL)
 
-.PHONY: clean all run build-frontend run-server build
+.PHONY: clean all run build-frontend run-server build docker-image

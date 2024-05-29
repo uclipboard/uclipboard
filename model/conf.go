@@ -23,7 +23,6 @@ type Conf struct {
 		TmpPath                  string `toml:"tmp_path"`
 		DefaultFileLife          int64  `toml:"default_file_life"`
 		TimerInterval            int    `toml:"timer_interval"`
-		MaxHistorySize           int    `toml:"max_history_size"`
 		ClipboardHistoryPageSize int    `toml:"clipboard_history_page_size"`
 		Port                     int    `toml:"port"`
 	} `toml:"server"`

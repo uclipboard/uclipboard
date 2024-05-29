@@ -60,8 +60,9 @@ adapter = "wl" #necessary, wl/xc/wc wl: wl-clipboard, xc: xclip, wc: win-clip
 - [x] test initial situation of DB 
 - [x] Authentication
 - [x] project icon (Thanks to GitHub `identicon`)
+- [x] web integration development && better gmake build
+- [ ] add version
 - [ ] more strict level debug log and hint
-- [ ] web integration development && bettergmake build
 - [ ] history page
 - [ ] cross-platform test
 
