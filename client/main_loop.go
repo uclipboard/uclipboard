@@ -11,25 +11,43 @@ import (
 func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *http.Client) {
 	logger := model.NewModuleLogger("loop")
 	var previousClipboard model.Clipboard
+	dynamicSleepTime := time.Duration(conf.Client.Interval) * time.Millisecond
 	for {
-		time.Sleep(time.Duration(conf.Client.Interval) * time.Millisecond) //sleep first to avoid the possible occured error then it skip sleep
-
+		logger.Debugf("sleep %v begin", dynamicSleepTime)
+		time.Sleep(dynamicSleepTime) //sleep first to avoid the possible occured error then it skip sleep
 		body, err := SendPullReq(client, conf)
 		if err != nil {
-			logger.Warnf("send pull request error: %v", err)
 			if err == ErrUnexpectRespStatus {
+				logger.Debugf("the response body when ErrUnexpectRespStatus occured: %q", string(body))
 				serverMsg, err := ExtractErrorMsg(body)
 				if err != nil {
-					logger.Warnf("extrace error msg error: %s", serverMsg)
+					logger.Warnf("extrace error msg error: %v", err)
+					continue
+				}
+				if serverMsg == "" {
+					logger.Warn("server msg is empty, please check the server log for more information")
 					continue
 				}
 				logger.Warnf("receive server msg: %s", serverMsg)
+
+			} else {
+				logger.Warnf("send pull request error: %v", err)
+				if dynamicSleepTime <= 200*time.Duration(conf.Client.Interval)*time.Millisecond {
+					dynamicSleepTime *= 2
+					logger.Debugf("increase sleep time to %v", dynamicSleepTime)
+				} else {
+					logger.Debugf("interval time has been arrived the maxmium value:%v", dynamicSleepTime)
+				}
 			}
+
 			continue
 		}
 
-		logger.Tracef("response body: %s", string(body))
-
+		logger.Debugf("current response body: %q", string(body))
+		logger.Debug("reset sleep time because the connection is activate")
+		if dynamicSleepTime != time.Duration(conf.Client.Interval)*time.Millisecond {
+			dynamicSleepTime = time.Duration(conf.Client.Interval) * time.Millisecond
+		}
 		remoteClipboards, err := ParsePullData(body)
 		if err != nil {
 			logger.Warnf("error parsing response body: %s", err)

@@ -54,12 +54,12 @@ func ginAuthMiddle(conf *model.Conf) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.Query("token")
 		if token == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+			c.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("unauthorized", nil))
 			c.Abort()
 			return
 		}
 		if token != conf.Runtime.TokenEncrypt {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization failed"})
+			c.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("token is incorrect", nil))
 			c.Abort()
 			return
 		}
