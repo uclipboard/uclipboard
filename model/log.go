@@ -16,7 +16,7 @@ func InitLogger(c *Conf) {
 			logger.SetOutput(file)
 		} else {
 			logger.SetOutput(os.Stdout)
-			logger.Warn("Failed to log to file, using default stderr")
+			logger.Warnf("Failed to log to file, using default stdout: %v", err)
 		}
 	}
 	switch c.Runtime.LogLevel {
