@@ -61,7 +61,8 @@ adapter = "wl" #necessary, wl/xc/wc wl: wl-clipboard, xc: xclip, wc: win-clip
 - [x] Authentication
 - [x] project icon (Thanks to GitHub `identicon`)
 - [x] web integration development && better gmake build
-- [ ] add version
+- [x] add version
+- [x] long interval when network connection is down and recover the interval after connection recovered
 - [ ] more strict level debug log and hint
 - [ ] history page
 - [ ] cross-platform test

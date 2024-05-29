@@ -21,6 +21,7 @@ func InitFlags(conf *Conf) {
 	flag.StringVar(&conf.Runtime.ConfPath, "conf", fmt.Sprintf("%s/conf.toml", exPath), "Specify the config path.")
 	flag.StringVar(&conf.Runtime.Msg, "msg", "", "(instant mode) push clipboard data.")
 	flag.StringVar(&conf.Runtime.Upload, "upload", "", "(instant mode) upload what ever file you want.")
+	flag.StringVar(&conf.Runtime.LogPath, "log", "", "Specify the log path.")
 	flag.StringVar(&conf.Runtime.Download, "download", "",
 		"(instant mode) specify the file name you want to download."+
 			"You can specify the file name to download the latest file."+

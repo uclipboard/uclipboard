@@ -29,7 +29,7 @@ jobs:
     - name: compile
       shell: bash
       run: |
-        make all
+        make bin
     - name: upload uclipboard-linux-amd64
       uses: actions/upload-artifact@v4
       with:

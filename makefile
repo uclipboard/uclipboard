@@ -28,6 +28,7 @@ bin: $(SRCS) $(FRONTEND_DIST)/index.html
 docker-image: bin
 	@echo "building container"
 	@docker build -t djh233/uclipboard:$(VERSION) .
+	@docker build -t djh233/uclipboard:latest .
 	
 $(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
 	@mkdir -p $(BUILD_DIR)

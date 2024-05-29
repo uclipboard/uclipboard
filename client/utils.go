@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/dangjinghao/uclipboard/model"
 )
@@ -50,22 +51,20 @@ func SendPullReq(client *http.Client, c *model.Conf) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, ErrUnexpectRespStatus
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		err = ErrUnexpectRespStatus
+	}
 
-	return body, nil
+	return body, err
 }
 
 func NewUClipboardHttpClient() *http.Client {
-	return &http.Client{}
+	return &http.Client{Timeout: time.Duration(30) * time.Second}
 }
 
 // if this clipboard content is a binary file, return the download url

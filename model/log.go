@@ -8,10 +8,18 @@ import (
 
 var logger = logrus.New()
 
-func InitLogger(logInfo string) {
+func InitLogger(c *Conf) {
 	logger.SetFormatter(&logrus.TextFormatter{})
-	logger.SetOutput(os.Stdout)
-	switch logInfo {
+	if c.Runtime.LogPath != "" {
+		file, err := os.OpenFile(c.Runtime.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err == nil {
+			logger.SetOutput(file)
+		} else {
+			logger.SetOutput(os.Stdout)
+			logger.Warnf("Failed to log to file, using default stdout: %v", err)
+		}
+	}
+	switch c.Runtime.LogLevel {
 	case "debug":
 		logger.SetLevel(logrus.DebugLevel)
 	case "trace":
