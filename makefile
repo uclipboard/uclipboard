@@ -55,6 +55,7 @@ run: $(BUILD_DIR)/$(TARGET)
 
 run-server: $(BUILD_DIR)/$(TARGET)
 	@echo "run local server"
-	@$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL)
+
+	@cd $(BUILD_DIR) && ./$(TARGET) --mode server --log-level $(LOG_LEVEL)
 
 .PHONY: clean all run build-frontend run-server build docker-image bin

@@ -27,6 +27,7 @@ type Conf struct {
 		TimerInterval            int    `toml:"timer_interval"`
 		ClipboardHistoryPageSize int    `toml:"clipboard_history_page_size"`
 		Port                     int    `toml:"port"`
+		CacheMaxAge              int    `toml:"cache_max_age"`
 	} `toml:"server"`
 
 	Runtime struct {
@@ -63,6 +64,7 @@ func NewConfWithDefault() *Conf {
 	c.Server.DefaultFileLife = 60 * 5 * 1000 //ms
 	c.Server.Port = 4533
 	c.Server.ClipboardHistoryPageSize = 20
+	c.Server.CacheMaxAge = 60 * 60 * 24 * 30 // 30 days
 	return &c
 }
 

@@ -17,7 +17,7 @@ import (
 )
 
 // ref: https://github.com/toorop/gin-logrus
-func ginLoggerMiddle() gin.HandlerFunc {
+func ginLoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 		ip := c.ClientIP()
@@ -50,7 +50,7 @@ func ginLoggerMiddle() gin.HandlerFunc {
 	}
 }
 
-func ginAuthMiddle(conf *model.Conf) gin.HandlerFunc {
+func ginAuthMiddleware(conf *model.Conf) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.Query("token")
 		if token == "" {
@@ -63,6 +63,21 @@ func ginAuthMiddle(conf *model.Conf) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		c.Next()
+	}
+}
+
+func cacheMiddleware(conf *model.Conf) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", conf.Server.CacheMaxAge)) // 30 days
+		c.Next()
+
+	}
+}
+
+func removeCacheMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Cache-Control", "no-store")
 		c.Next()
 	}
 }
@@ -86,7 +101,7 @@ func Run(c *model.Conf) {
 	}
 
 	r := gin.New()
-	r.Use(ginLoggerMiddle())
+	r.Use(ginLoggerMiddleware())
 	if strings.Contains(c.Runtime.Test, "c") {
 		logger.Warn("Allow all cors request")
 		corsConfig := cors.DefaultConfig()
@@ -94,6 +109,8 @@ func Run(c *model.Conf) {
 		corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "hostname")
 		r.Use(cors.New(corsConfig))
 	}
+
+	r.Use(cacheMiddleware(c))
 
 	// icon
 	r.StaticFileFS("/favicon.ico", "favicon.ico", frontend.AssetsFS())
@@ -106,13 +123,14 @@ func Run(c *model.Conf) {
 
 	// api
 	api := r.Group(model.ApiPrefix)
+	api.Use(removeCacheMiddleware())
 	{
 		v0 := api.Group(model.ApiVersion)
 		publicV0 := v0.Group(model.ApiPublic)
 
 		if !strings.Contains(c.Runtime.Test, "t") {
 			logger.Debugf("Token: %s and server will use it", c.Runtime.TokenEncrypt)
-			v0.Use(ginAuthMiddle(c))
+			v0.Use(ginAuthMiddleware(c))
 		} else {
 			logger.Warnf("Token check is disabled")
 		}
