@@ -21,4 +21,4 @@ jobs:
     - name: get release tag
       run: |
         echo $GITHUB_REF
-        echo ${{ github.ref }}
+        echo $(basename ${{ github.ref }})
