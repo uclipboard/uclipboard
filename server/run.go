@@ -113,7 +113,7 @@ func Run(c *model.Conf) {
 	r.Use(cacheMiddleware(c))
 
 	// icon
-	r.StaticFileFS("/favicon.ico", "favicon.ico", frontend.AssetsFS())
+	r.StaticFileFS("/favicon.ico", "favicon.ico", frontend.FrontendRootFS())
 	// index or anything
 	r.NoRoute(func(c *gin.Context) {
 		c.FileFromFS("/", frontend.FrontendRootFS())

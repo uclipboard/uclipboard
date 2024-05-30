@@ -45,7 +45,7 @@ $(FRONTEND_DIST)/index.html: $(FRONTEND_SRCS)
 build-frontend: $(FRONTEND_DIST)/index.html
 
 clean:
-	@rm -f $(BUILD_DIR)/*
+	@rm -rf $(BUILD_DIR)/*
 	@rm -rf $(FRONTEND_DIST)/*
 	
 run: $(BUILD_DIR)/$(TARGET)
