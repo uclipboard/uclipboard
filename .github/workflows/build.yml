@@ -8,10 +8,10 @@ on:
 
 jobs:
   
-  build-and-upload:
+  build-and-store-artifacts:
     runs-on: ubuntu-latest
     steps:
-    - name: basic setup
+    - name: checkout
       uses: actions/checkout@v4
       with:
         submodules: true
@@ -32,27 +32,26 @@ jobs:
       shell: bash
       run: |
         make bin
-    - name: upload uclipboard-linux-amd64
+    - name: store uclipboard-linux-amd64
       uses: actions/upload-artifact@v4
       with:
          name: uclipboard-linux-amd64
          path: ./build/uclipboard-linux-amd64
          
-    - name: upload uclipboard-linux-arm64
+    - name: store uclipboard-linux-arm64
       uses: actions/upload-artifact@v4
       with:
          name: uclipboard-linux-arm64
          path: ./build/uclipboard-linux-arm64
          
-    - name: upload uclipboard-windows-386
+    - name: store uclipboard-windows-386
       uses: actions/upload-artifact@v4
       with:
          name: uclipboard-windows-386
          path: ./build/uclipboard-windows-386.exe
 
-    - name: upload uclipboard-windows-amd64
+    - name: store uclipboard-windows-amd64
       uses: actions/upload-artifact@v4
       with:
          name: uclipboard-windows-amd64
          path: ./build/uclipboard-windows-amd64.exe
-
