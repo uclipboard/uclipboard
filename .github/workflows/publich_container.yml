@@ -18,7 +18,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - name: get release tag
+    - name: save release tag
       run: |
-        echo $GITHUB_REF
-        echo $(basename ${{ github.ref }})
+        echo "TAG=$(basename ${{ github.ref }})" >> $GITHUB_ENV
+
+    - name: echo release tag
+      run: |
+        echo ${{ env.TAG }}
