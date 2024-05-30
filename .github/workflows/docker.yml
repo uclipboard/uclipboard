@@ -11,10 +11,10 @@ name: Publish Docker image
 
 on:
   release:
-    types: [published, edited]
+    types: ["published", "edited"]
 
 jobs:
-  push_to_registry:
+  test:
     runs-on: ubuntu-latest
     steps:
     - name: get release tag
