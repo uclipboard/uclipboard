@@ -43,6 +43,7 @@ type Conf struct {
 		TokenEncrypt string
 		ShowVersion  bool
 		LogPath      string
+		ShowHelp     bool
 	}
 }
 
