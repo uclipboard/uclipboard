@@ -65,7 +65,30 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("can't read file from request", nil))
 			return
 		}
+		lifetime := ctx.Query("lifetime")
+		var lifetimeMS int64
+		if lifetime != "" {
+			logger.Debugf("it is not a default lifetime: %v", lifetime)
+			lifetimeInt, err := strconv.ParseInt(lifetime, 10, 64)
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("invalid lifetime time", nil))
+				return
+			}
+			lifetimeMS = lifetimeInt
+		} else {
+			logger.Trace("use default lifetime")
+			lifetimeMS = conf.Runtime.DefaultFileLifeMS
+		}
+		// hardcode: the maximum lifetime is 90 days
+		if lifetimeMS > 1000*60*60*24*90 {
+			logger.Debug("lifetime is too long, set it to 90 days")
+			lifetimeMS = 1000 * 60 * 60 * 24 * 90
+		}
+
+		logger.Tracef("lifetime: %vms", lifetimeMS)
+
 		fileMetadata := model.NewFileMetadataWithDefault()
+
 		if file.Filename == "" {
 			// It would not be happened on uclipboard client
 			file.Filename = model.RandString(8)
@@ -74,7 +97,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 
 		fileMetadata.FileName = file.Filename
 		fileMetadata.TmpPath = fmt.Sprintf("%s_%s", strconv.FormatInt(fileMetadata.CreatedTs, 10), file.Filename)
-		fileMetadata.ExpireTs = conf.Server.DefaultFileLife + fileMetadata.CreatedTs
+		fileMetadata.ExpireTs = lifetimeMS + fileMetadata.CreatedTs
 		logger.Tracef("Upload file metadata is: %v", fileMetadata)
 
 		newClipboardRecord := model.NewClipoardWithDefault()
@@ -111,7 +134,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		}
 		logger.Debugf("The new file id is %v", fileId)
 		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
-			"life_time": conf.Server.DefaultFileLife / 1000}) // ms -> s
+			"life_time": lifetimeMS / 1000}) // ms -> s
 		if err != nil {
 			logger.Tracef("Marshal response data error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("marshal response data error", nil))

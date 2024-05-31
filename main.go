@@ -33,8 +33,6 @@ func main() {
 	conf = model.FormatConf(conf)
 	model.CheckConf(conf)
 
-	conf.Runtime.TokenEncrypt = model.TokenEncrypt(conf.Token)
-
 	logger := model.NewModuleLogger("entry")
 
 	logger.Debugf("running Mode: %s", conf.Runtime.Mode)

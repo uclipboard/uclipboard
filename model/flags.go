@@ -31,5 +31,6 @@ func InitFlags(conf *Conf) {
 	flag.BoolVar(&conf.Runtime.Latest, "latest", false, "(instant mode) download latest file.")
 	flag.BoolVar(&conf.Runtime.ShowVersion, "version", false, "show version")
 	flag.BoolVar(&conf.Runtime.ShowHelp, "help", false, "show help")
+	flag.StringVar(&conf.Runtime.UploadFileLifetimeStr, "lifetime", "", "(instant mode) specify the file lifetime. (support unit: s, m, h, d)")
 	flag.Parse()
 }

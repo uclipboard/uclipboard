@@ -25,7 +25,11 @@ func UrlPullApi(c *Conf) string {
 }
 
 func UrlUploadApi(c *Conf) string {
-	return fmt.Sprintf("%s/%s/%s/%s?token=%s", c.Client.ServerUrl, ApiPrefix, ApiVersion, Api_Upload, c.Runtime.TokenEncrypt)
+	str := fmt.Sprintf("%s/%s/%s/%s?token=%s", c.Client.ServerUrl, ApiPrefix, ApiVersion, Api_Upload, c.Runtime.TokenEncrypt)
+	if c.Runtime.UploadFileLifetime != 0 {
+		str += fmt.Sprintf("&lifetime=%d", c.Runtime.UploadFileLifetime)
+	}
+	return str
 }
 
 func UrlDownloadApi(c *Conf, fileName string) string {

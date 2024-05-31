@@ -2,6 +2,7 @@ package model
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -29,21 +30,24 @@ type Conf struct {
 		Port                     int    `toml:"port"`
 		CacheMaxAge              int    `toml:"cache_max_age"`
 	} `toml:"server"`
-
+	// All struct should be read-only except runtime after LoadConf
 	Runtime struct {
-		Mode         string
-		ConfPath     string
-		LogLevel     string
-		Msg          string
-		Download     string
-		Upload       string
-		Pull         bool
-		Latest       bool
-		Test         string
-		TokenEncrypt string
-		ShowVersion  bool
-		LogPath      string
-		ShowHelp     bool
+		Mode                  string
+		ConfPath              string
+		LogLevel              string
+		Msg                   string
+		Download              string
+		Upload                string
+		Pull                  bool
+		Latest                bool
+		Test                  string
+		TokenEncrypt          string
+		ShowVersion           bool
+		LogPath               string
+		ShowHelp              bool
+		UploadFileLifetime    int64
+		UploadFileLifetimeStr string
+		DefaultFileLifeMS     int64
 	}
 }
 
@@ -62,10 +66,11 @@ func NewConfWithDefault() *Conf {
 	c.Server.TmpPath = "./tmp/"
 	c.Server.TimerInterval = 60
 	c.Server.PullHistorySize = 5
-	c.Server.DefaultFileLife = 60 * 5 * 1000 //ms
+	c.Server.DefaultFileLife = 60 * 5 //ms 5min
 	c.Server.Port = 4533
 	c.Server.ClipboardHistoryPageSize = 20
 	c.Server.CacheMaxAge = 60 * 60 * 24 * 30 // 30 days
+
 	return &c
 }
 
@@ -83,12 +88,46 @@ func LoadConf(conf *Conf) *Conf {
 	return conf
 }
 
+func ParseTimeStr(t string) int64 {
+	logger := NewModuleLogger("time_parser")
+	if t == "" {
+		return 0
+	}
+	var unit int64
+	parseLen := len(t) - 1
+	switch t[len(t)-1] {
+	case 's':
+		unit = 1
+	case 'm':
+		unit = 60
+	case 'h':
+		unit = 60 * 60
+	case 'd':
+		unit = 60 * 60 * 24
+	default:
+		unit = 1
+		parseLen += 1
+	}
+	numberNoUnit, err := strconv.ParseInt(t[:parseLen], 10, 64)
+	if err != nil {
+		logger.Warnf("invalid lifetime: %s", t)
+		return 0
+	}
+	return numberNoUnit * unit * 1000
+
+}
 func FormatConf(conf *Conf) *Conf {
+	logger := NewModuleLogger("config_formatter")
 	// delete the last '/' of server url
 	if len(conf.Client.ServerUrl) > 0 && conf.Client.ServerUrl[len(conf.Client.ServerUrl)-1] == '/' {
 		conf.Client.ServerUrl = conf.Client.ServerUrl[:len(conf.Client.ServerUrl)-1]
 	}
-	conf.Server.DefaultFileLife *= 1000
+	conf.Runtime.DefaultFileLifeMS = conf.Server.DefaultFileLife * 1000 // s -> ms
+
+	lifetimeInt := ParseTimeStr(conf.Runtime.UploadFileLifetimeStr)
+	conf.Runtime.UploadFileLifetime = lifetimeInt
+	logger.Debugf("lifetime: %d", lifetimeInt)
+	conf.Runtime.TokenEncrypt = TokenEncrypt(conf.Token)
 	return conf
 }
 

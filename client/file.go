@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/dangjinghao/uclipboard/model"
 	"github.com/sirupsen/logrus"
@@ -80,8 +81,8 @@ func UploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 		logger.Fatalf("parse upload response body error: %v", err)
 	}
 
-	fmt.Printf("upload file success, file_id: %v, file_name: %v, life_time: %vs\n",
-		respData["file_id"], respData["file_name"], respData["life_time"])
+	fmt.Printf("upload file success, file_id: %v, file_name: %v, life_time: %ss\n",
+		respData["file_id"], respData["file_name"], strconv.FormatFloat(respData["life_time"].(float64), 'f', -1, 64))
 
 }
 
