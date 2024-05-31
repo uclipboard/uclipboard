@@ -44,8 +44,8 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 		}
 
 		logger.Debugf("current response body: %q", string(body))
-		logger.Debug("reset sleep time because the connection is activate")
 		if dynamicSleepTime != time.Duration(conf.Client.Interval)*time.Millisecond {
+			logger.Info("reset sleep time because the connection is activated.")
 			dynamicSleepTime = time.Duration(conf.Client.Interval) * time.Millisecond
 		}
 		remoteClipboards, err := ParsePullData(body)
@@ -75,8 +75,8 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 			E := adapterObj.Copy(clipboardContentIfIsFile)
 
 			if E != nil {
-				logger.Fatalf("adapter.Copy error:%v", E)
-
+				logger.Warnf("adapter.Copy error:%v", E)
+				continue
 			}
 			logger.Info("synchronize data completed.")
 			logger.Tracef("previousClipboard.Content: %s", previousClipboard.Content)
@@ -86,8 +86,8 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 			previousClipboard = remoteClipboards[0]
 			E := adapterObj.Copy(clipboardContentIfIsFile)
 			if E != nil {
-				logger.Fatalf("adapter.Copy error:%v", E)
-
+				logger.Warnf("adapter.Copy error:%v", E)
+				continue
 			}
 			continue
 		}
@@ -98,7 +98,8 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 				logger.Infof(`adapter.Paste error:%v ,set empty string clipboard.`, E)
 				currentClipboard = ""
 			} else {
-				logger.Fatalf("adapter.Paste error:%v", E)
+				logger.Warnf("adapter.Paste error:%v", E)
+				continue
 			}
 
 		}
