@@ -12,5 +12,6 @@ RUN mkdir /data && chmod 777 /data
 
 COPY docker-entrypoint.sh /entrypoint.sh
 COPY ${BUILD_DIR}/uclipboard-${PLATFORM} ./uclipboard
+RUN chmod +x ./uclipboard /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
