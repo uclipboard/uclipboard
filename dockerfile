@@ -1,24 +1,16 @@
 # linux amd64 version image
-FROM debian:stable
+FROM debian:stable-slim
 LABEL maintainer="dangjinghaoemail@163.com"
 WORKDIR /app/
 
 ARG BUILD_DIR=build
 ARG PLATFORM=linux-amd64
 
+EXPOSE 4533
+
+RUN mkdir /data && chmod 777 /data
+
 COPY docker-entrypoint.sh /entrypoint.sh
 COPY ${BUILD_DIR}/uclipboard-${PLATFORM} ./uclipboard
-
-RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
-
-RUN apt-get update && apt-get install bash -y && \
-    apt-get clean && \
-    chmod +x /entrypoint.sh && \
-    chmod +x /app/uclipboard
-
-ENV PLATFORM=$PLATFORM \
-    PUID=0 PGID=0 UMASK=022 
-
-EXPOSE 4533
 
 ENTRYPOINT ["/entrypoint.sh"]
