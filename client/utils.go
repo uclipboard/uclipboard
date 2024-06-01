@@ -68,8 +68,12 @@ func SendPullReq(client *http.Client, c *model.Conf) ([]byte, error) {
 	return body, err
 }
 
-func NewUClipboardHttpClient() *http.Client {
-	client := &http.Client{Timeout: time.Duration(30) * time.Second}
+func NewUClipboardHttpClient(c *model.Conf) *http.Client {
+	if c.Client.Timeout == 0 {
+		return &http.Client{}
+	}
+
+	client := &http.Client{Timeout: time.Duration(c.Client.Timeout) * time.Millisecond}
 	return client
 }
 

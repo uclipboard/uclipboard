@@ -17,6 +17,7 @@ type Conf struct {
 		Connect    string `toml:"connect"`
 		Adapter    string `toml:"adapter"`
 		Interval   int    `toml:"interval"`
+		Timeout    int64  `toml:"timeout"`
 		XSelection string `toml:"X_selection"`
 	} `toml:"client"`
 
@@ -70,7 +71,7 @@ func NewConfWithDefault() *Conf {
 	c.Server.Port = 4533
 	c.Server.ClipboardHistoryPageSize = 20
 	c.Server.CacheMaxAge = 60 * 60 * 24 * 30 // 30 days
-
+	c.Client.Timeout = 0
 	return &c
 }
 

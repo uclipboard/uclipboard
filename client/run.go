@@ -23,12 +23,12 @@ func Run(c *model.Conf) {
 		// MacOS(pbcopy/paste)
 		logger.Fatal("error unknown clipboard adapter")
 	}
-	client := NewUClipboardHttpClient()
+	client := NewUClipboardHttpClient(c)
 	mainLoop(c, clipboardAdapter, client)
 }
 
 func Instant(c *model.Conf) {
-	client := NewUClipboardHttpClient()
+	client := NewUClipboardHttpClient(c)
 	logger := model.NewModuleLogger("instant")
 	argMsg := c.Runtime.PushMsg
 	// priority: binary file > pull data > argument message > stdin
