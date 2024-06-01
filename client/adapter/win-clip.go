@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"bytes"
+	"errors"
 	"os/exec"
 	"strings"
 )
@@ -33,7 +34,7 @@ func (WC *WinClip) Paste() (string, error) {
 		if strings.Contains(stdErr.String(), "no data") {
 			return "", ErrEmptyClipboard
 		}
-		return "", err
+		return "", errors.New(stdErr.String())
 	}
 
 	outStr := out.String()

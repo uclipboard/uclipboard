@@ -16,6 +16,11 @@ var ErrUnexpectRespStatus = errors.New("this response status code isn't ok")
 // return the marshaled request body and the raw clipboard struct
 func GenClipboardReqBody(c string) ([]byte, *model.Clipboard, error) {
 	reqData := model.NewFullClipoard(c)
+
+	if reqData.Hostname == "unknown" {
+		reqData.Hostname = "uclipboard_client"
+	}
+
 	reqBody, err := json.Marshal(reqData)
 	if err != nil {
 		return nil, nil, err
@@ -64,11 +69,12 @@ func SendPullReq(client *http.Client, c *model.Conf) ([]byte, error) {
 }
 
 func NewUClipboardHttpClient() *http.Client {
-	return &http.Client{Timeout: time.Duration(30) * time.Second}
+	client := &http.Client{Timeout: time.Duration(30) * time.Second}
+	return client
 }
 
 // if this clipboard content is a binary file, return the download url
-func DeteckAndConcatFileUrl(conf *model.Conf, clipboard *model.Clipboard) string {
+func DetectAndConcatFileUrl(conf *model.Conf, clipboard *model.Clipboard) string {
 	content := clipboard.Content
 	if clipboard.ContentType == "binary" {
 		content = model.UrlDownloadApi(conf, content)

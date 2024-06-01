@@ -126,7 +126,7 @@ func FormatConf(conf *Conf) *Conf {
 
 	lifetimeInt := ParseTimeStr(conf.Runtime.UploadFileLifetimeStr)
 	conf.Runtime.UploadFileLifetime = lifetimeInt
-	logger.Debugf("lifetime: %d", lifetimeInt)
+	logger.Debugf("parsed lifetime: %d", lifetimeInt)
 	conf.Runtime.TokenEncrypt = TokenEncrypt(conf.Token)
 	return conf
 }

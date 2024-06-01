@@ -34,12 +34,12 @@ func Instant(c *model.Conf) {
 	// priority: binary file > pull data > argument message > stdin
 
 	if c.Runtime.Upload != "" {
-		logger.Tracef("upload binary file: %s", c.Runtime.Upload)
+		logger.Debugf("upload binary file: %s", c.Runtime.Upload)
 
 		UploadFile(c.Runtime.Upload, client, c, logger)
 
 	} else if c.Runtime.Latest || c.Runtime.Download != "" {
-		logger.Tracef("download binary file. c.Flags.Latest:%t, c.Flags.Download:%s", c.Runtime.Latest, c.Runtime.Download)
+		logger.Debugf("download binary file. c.Flags.Latest:%t, c.Flags.Download:%s", c.Runtime.Latest, c.Runtime.Download)
 
 		var fileName string
 		if c.Runtime.Latest {
@@ -50,7 +50,7 @@ func Instant(c *model.Conf) {
 		DownloadFile(fileName, client, c, logger)
 
 	} else if c.Runtime.Pull {
-		logger.Trace("pull clipboard from server")
+		logger.Debugf("pull clipboard from server")
 
 		respBody, err := SendPullReq(client, c)
 		if err != nil {
@@ -61,12 +61,12 @@ func Instant(c *model.Conf) {
 		if err != nil {
 			logger.Fatalf("parse pull data error: %v", err)
 		}
-		newContent := DeteckAndConcatFileUrl(c, &clipboardArr[0])
+		newContent := DetectAndConcatFileUrl(c, &clipboardArr[0])
 		logger.Tracef("newContent: %s", newContent)
 		fmt.Println(newContent)
 
 	} else if argMsg == "" {
-		logger.Trace("read data from stdin because there is no argument message")
+		logger.Debug("read data from stdin because there is no argument message")
 		in, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			logger.Fatalf("Read data from stdin error: %s", err.Error())
@@ -81,7 +81,7 @@ func Instant(c *model.Conf) {
 		}
 
 	} else if argMsg != "" {
-		logger.Tracef("upload argument message: %s", argMsg)
+		logger.Debugf("upload argument message: %s", argMsg)
 		if _, err := SendPushReq(argMsg, client, c); err != nil {
 			logger.Fatalf("send push request error:%v", err)
 		}

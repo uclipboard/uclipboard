@@ -145,6 +145,6 @@ func Run(c *model.Conf) {
 	}
 	logger.Infof("Server is running on :%d", c.Server.Port)
 	if err := r.Run(":" + strconv.Itoa(c.Server.Port)); err != nil {
-		logger.Fatalf("Server run error: %s", err.Error())
+		logger.Fatalf("Server run error: %v", err)
 	}
 }

@@ -30,19 +30,19 @@ func UploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 	fileName := fileStat.Name()
 
 	fmt.Printf("uploading file: %s\t file_size: %vKiB\n", fileName, float32(fileStat.Size()/1024))
-	// TODO:read file content type
+
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
-	logger.Tracef("upload file name: %s", fileName)
+	logger.Debugf("upload file name: %s", fileName)
 	part, err := bodyWriter.CreateFormFile("file", fileName)
 	if err != nil {
-		logger.Fatalf("CreateFormField error: %v", err)
+		logger.Fatalf("CreateFormFile error: %v", err)
 	}
 	num, err := io.Copy(part, file)
 	if err != nil {
-		logger.Fatalf("copy file error: %v", err)
+		logger.Fatalf("copy file to form buffer error: %v", err)
 	}
-	logger.Tracef("copy file size: %d", num)
+	logger.Debugf("copy file size: %db", num)
 
 	err = bodyWriter.Close()
 	if err != nil {
@@ -57,18 +57,19 @@ func UploadFile(filePath string, client *http.Client, c *model.Conf, logger *log
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		logger.Warnf("Get hostname error: %v", err)
+		logger.Warnf("Get hostname error: %v,reset to uclipboard_client", err)
+		hostname = "uclipboard_client"
 	}
 	// add hostname to header
 	req.Header.Set("Hostname", hostname)
-
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Fatalf("Upload file error: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		logger.Fatalf("Upload file failed, status: %s", resp.Status)
+		logger.Fatalf("Upload file failed: %s", resp.Status)
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -94,21 +95,18 @@ func parseContentDisposition(contentDisposition string) string {
 	return params["filename"]
 }
 
-func DownloadFile(fileId string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
+func DownloadFile(requiredFileName string, client *http.Client, c *model.Conf, logger *logrus.Entry) {
 	logger.Trace("into DownloadFile")
-	logger.Tracef("fileId: %s", fileId)
-	downloadUrl := model.UrlDownloadApi(c, fileId)
-	logger.Tracef("downloadApi: %s", downloadUrl)
+	logger.Tracef("fileId: %s", requiredFileName)
+	downloadUrl := model.UrlDownloadApi(c, requiredFileName)
+	logger.Debugf("file url: %s", downloadUrl)
 	res, err := client.Get(downloadUrl)
 	if err != nil {
 		logger.Fatalf("download file error: %v", err)
 		return
 	}
 	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		fmt.Printf("file not found!\n")
-		return
-	} else if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK {
 		// print response body
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
@@ -119,12 +117,13 @@ func DownloadFile(fileId string, client *http.Client, c *model.Conf, logger *log
 		if err != nil {
 			logger.Fatalf("extract error message error: %v", err)
 		}
-		logger.Fatalf("download file failed, status_code %d, msg: %v", res.StatusCode, msg)
+		logger.Fatalf("download file failed: %v, error msg: %v", res.Status, msg)
 	}
 	contentDisposition := res.Header.Get("Content-Disposition")
 	logger.Tracef("Content-Disposition: %s", contentDisposition)
-	fileName := parseContentDisposition(contentDisposition)
-	file, err := os.Create(fileName)
+	realFileName := parseContentDisposition(contentDisposition)
+	logger.Debugf("real file name: %s", realFileName)
+	file, err := os.Create(realFileName)
 	if err != nil {
 		logger.Fatalf("create file error: %v", err)
 	}
@@ -133,6 +132,6 @@ func DownloadFile(fileId string, client *http.Client, c *model.Conf, logger *log
 	if err != nil {
 		logger.Fatalf("copy file error: %v", err)
 	}
-	fmt.Printf("download file success: %s, file_size: %vKib\n", fileName, float32(N/1024))
+	fmt.Printf("download file success: %s, file_size: %vKib\n", realFileName, float64(N/1024))
 
 }
