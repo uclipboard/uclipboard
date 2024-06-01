@@ -33,10 +33,11 @@ func (WC *WinClip) Paste() (string, error) {
 	if err != nil {
 		if strings.Contains(stdErr.String(), "no data") {
 			return "", ErrEmptyClipboard
+		} else if strings.Contains(stdErr.String(), "Unable to open the clipboard") {
+			return "", ErrLockedClipboard
 		}
 		return "", errors.New(stdErr.String())
 	}
-
 	outStr := out.String()
 	outStr = strings.ReplaceAll(outStr, "\r\n", "\n")
 	return outStr, nil
