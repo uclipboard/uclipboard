@@ -45,7 +45,7 @@ $(FRONTEND_DIST)/index.html: $(FRONTEND_SRCS)
 build-frontend: $(FRONTEND_DIST)/index.html
 
 clean:
-	@rm -rf $(BUILD_DIR)/*
+	@rm -f $(BUILD_DIR)/uclipboard*
 	@rm -rf $(FRONTEND_DIST)/*
 	
 run: $(BUILD_DIR)/$(TARGET)

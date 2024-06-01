@@ -30,7 +30,7 @@ func Run(c *model.Conf) {
 func Instant(c *model.Conf) {
 	client := NewUClipboardHttpClient()
 	logger := model.NewModuleLogger("instant")
-	argMsg := c.Runtime.Msg
+	argMsg := c.Runtime.PushMsg
 	// priority: binary file > pull data > argument message > stdin
 
 	if c.Runtime.Upload != "" {

@@ -35,7 +35,7 @@ type Conf struct {
 		Mode                  string
 		ConfPath              string
 		LogLevel              string
-		Msg                   string
+		PushMsg               string
 		Download              string
 		Upload                string
 		Pull                  bool
