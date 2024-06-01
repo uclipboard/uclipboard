@@ -105,7 +105,7 @@ func GetFileMetadataLatestRecord(d *model.FileMetadata) (err error) {
 }
 
 // find the latest record by id or name
-func GetFileMetadataRecordByOrName(d *model.FileMetadata) (err error) {
+func GetFileMetadataRecordByIdOrName(d *model.FileMetadata) (err error) {
 	logger.Tracef("call GetFileMetadataRecordByOrName(%v)", d)
 	err = DB.Get(d, queryFileMetadataByIdOrName, d.Id, d.FileName)
 	return

@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/dangjinghao/uclipboard/model"
 	"github.com/dangjinghao/uclipboard/server/core"
@@ -66,66 +67,45 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 			return
 		}
 		lifetime := ctx.Query("lifetime")
-		var lifetimeMS int64
-		if lifetime != "" {
-			logger.Debugf("it is not a default lifetime: %v", lifetime)
-			lifetimeInt, err := strconv.ParseInt(lifetime, 10, 64)
-			if err != nil {
-				ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("invalid lifetime time", nil))
-				return
-			}
-			lifetimeMS = lifetimeInt
-		} else {
-			logger.Trace("use default lifetime")
-			lifetimeMS = conf.Runtime.DefaultFileLifeMS
+		lifetimeMS, err := core.ConvertLifetime(lifetime, conf.Runtime.DefaultFileLifeMS)
+		if err != nil {
+			logger.Debugf("ConvertLifetime error: %v", err)
+			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("invalid lifetime", nil))
+			return
 		}
-		// hardcode: the maximum lifetime is 90 days
-		if lifetimeMS > 1000*60*60*24*90 {
-			logger.Debug("lifetime is too long, set it to 90 days")
-			lifetimeMS = 1000 * 60 * 60 * 24 * 90
-		}
-
 		logger.Tracef("lifetime: %vms", lifetimeMS)
 
-		fileMetadata := model.NewFileMetadataWithDefault()
+		hostname := ctx.Request.Header.Get("hostname")
+		if hostname == "" {
+			hostname = "unknown"
+		}
+		logger.Debugf("uploader's hostname is: %s", hostname)
 
 		if file.Filename == "" {
 			// It would not be happened on uclipboard client
 			file.Filename = model.RandString(8)
 			logger.Warnf("Filename is empty, generate a random filename:%v", file.Filename)
 		}
-
+		// prepare to download file
+		fileMetadata := model.NewFileMetadataWithDefault()
 		fileMetadata.FileName = file.Filename
 		fileMetadata.TmpPath = fmt.Sprintf("%s_%s", strconv.FormatInt(fileMetadata.CreatedTs, 10), file.Filename)
 		fileMetadata.ExpireTs = lifetimeMS + fileMetadata.CreatedTs
-		logger.Tracef("Upload file metadata is: %v", fileMetadata)
-
-		newClipboardRecord := model.NewClipoardWithDefault()
-		hostname := ctx.Request.Header.Get("hostname")
-		if hostname == "" {
-			hostname = "unknown"
-		}
-		logger.Tracef("uploader's hostname is: %s", hostname)
-		newClipboardRecord.Hostname = hostname
-		newClipboardRecord.ContentType = "binary"
+		logger.Debugf("Upload file metadata is: %v", fileMetadata)
 
 		// save file to tmp directory and get the path to save in db
 		filePath := filepath.Join(conf.Server.TmpPath, fileMetadata.TmpPath)
-		newClipboardRecord.Content = fileMetadata.FileName
 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
-			logger.Tracef("SaveUploadedFile error: %v", err)
+			logger.Warnf("SaveUploadedFile error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("save file error", nil))
 			return
 		}
-		logger.Tracef("Upload binary file clipboard record: %v", newClipboardRecord)
+
 		// FIXME: I don't know, maybe I should use transaction
 		// When one of the following operations fails, the saved file should be deleted
 		// And at that time, both of the tables are not synchronized
-		if err := core.AddClipboardRecord(newClipboardRecord); err != nil {
-			logger.Tracef("AddClipboardRecord error: %v", err)
-			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("add clipboard record error", nil))
-			return
-		}
+
+		// save file metadata to db
 		fileId, err := core.AddFileMetadataRecord(fileMetadata)
 		if err != nil {
 			logger.Tracef("AddFileMetadataRecord error: %v", err)
@@ -133,6 +113,19 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 			return
 		}
 		logger.Debugf("The new file id is %v", fileId)
+
+		// save clipboard record to db
+		newClipboardRecord := model.NewClipoardWithDefault()
+		newClipboardRecord.Content = fmt.Sprintf("%s@%d", fileMetadata.FileName, fileId) // add fileid to clipboard record
+		newClipboardRecord.Hostname = hostname
+		newClipboardRecord.ContentType = "binary"
+		logger.Tracef("Upload binary file clipboard record: %v", newClipboardRecord)
+		if err := core.AddClipboardRecord(newClipboardRecord); err != nil {
+			logger.Tracef("AddClipboardRecord error: %v", err)
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("add clipboard record error", nil))
+			return
+		}
+
 		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
 			"life_time": lifetimeMS / 1000}) // ms -> s
 		if err != nil {
@@ -149,37 +142,43 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 	logger := model.NewModuleLogger("HandlerDownload")
 
 	return func(ctx *gin.Context) {
-		logger.Tracef("request download raw filename paramater: %v", ctx.Param("filename"))
+		logger.Debugf("request download raw filename paramater: %v", ctx.Param("filename"))
 
 		fileName := ctx.Param("filename")[1:] // skip '/' in '/xxx'
 		metadata := model.NewFileMetadataWithDefault()
 		if fileName == "" {
+			// download latest binary file
 			if err := core.GetFileMetadataLatestRecord(metadata); err != nil {
 				if err == sql.ErrNoRows {
 					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("file not found", nil))
 					return
 				}
 
-				logger.Tracef("GetFileMetadataLatestRecord error: %v", err)
+				logger.Debugf("GetFileMetadataLatestRecord error: %v", err)
 				ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get the latest file metadata record error", nil))
 				return
 			}
+
 			logger.Debugf("Get the latest file metadata record: %v", metadata)
 		} else {
-			if fileName[0] == '@' {
-				idInt, err := strconv.Atoi(fileName[1:])
-				if err != nil {
+			if strings.Contains(fileName, "@") {
+				// download by id
+
+				// get the id number starts after @
+				id := core.ExtractFileId(fileName, "@")
+				if id == 0 {
 					ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("invalid format of file id ", nil))
+					return
 				}
-				metadata.Id = int64(idInt)
+				metadata.Id = id
 				logger.Debugf("download by id: %v", metadata.Id)
 			} else {
+				// download by name
 				metadata.FileName = fileName
 				logger.Debugf("download by name: %s", metadata.FileName)
-
 			}
-
-			err := core.GetFileMetadataRecordByOrName(metadata)
+			
+			err := core.GetFileMetadataRecordByIdOrName(metadata)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("file not found", nil))
@@ -188,15 +187,15 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 				ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get file metadata record error: "+err.Error(), nil))
 				return
 			}
+
 		}
+
 		fullPath := path.Join(conf.Server.TmpPath, metadata.TmpPath)
 		logger.Debugf("Required file full path: %s", fullPath)
 		// set file name in header
 		ctx.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, metadata.FileName))
-		// FIXME: What will be happened if send this file when the file is expired and deleted by the timerGC?
 		ctx.File(fullPath)
 	}
-
 }
 
 func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
