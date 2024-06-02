@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -215,6 +216,15 @@ func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
 			return
 		}
 		logger.Debugf("Request clipboard history page: %v", pageInt)
+		clipboardsCount, err := core.CountClipboardHistory(c)
+		historyPageCount := math.Ceil(float64(clipboardsCount) / float64(c.Server.ClipboardHistoryPageSize))
+
+		if err != nil {
+			logger.Debugf("CountClipboardHistory error: %v", err)
+			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("count clipboard history error", nil))
+			return
+		}
+
 		clipboards, err := core.QueryClipboardHistory(c, pageInt)
 		if err != nil {
 			logger.Debugf("QueryClipboardHistory error: %v", err)
@@ -222,7 +232,7 @@ func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
 			return
 		}
 		logger.Tracef("clipboards: %v", clipboards)
-		clipboardsBytes, err := json.Marshal(clipboards)
+		clipboardsBytes, err := json.Marshal(gin.H{"history": clipboards, "pages": historyPageCount})
 		if err != nil {
 			logger.Debugf("Marshal clipboards error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("marshal clipboards error", nil))

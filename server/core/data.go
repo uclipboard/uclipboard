@@ -66,6 +66,8 @@ var (
 	queryClipboardHistoryWithPage = fmt.Sprintf(`select * from %s
 	order by id desc limit ? offset ?
 	`, clipboard_table_name)
+	quecyCountClipboardHistory = fmt.Sprintf(`select count(*) from %s
+	`, clipboard_table_name)
 )
 var logger *logrus.Entry
 
@@ -153,5 +155,11 @@ func QueryClipboardHistory(conf *model.Conf, page int) (clipboards []model.Clipb
 	err = DB.Select(&clipboards, queryClipboardHistoryWithPage,
 		conf.Server.ClipboardHistoryPageSize,
 		(page-1)*conf.Server.ClipboardHistoryPageSize)
+	return
+}
+
+func CountClipboardHistory(conf *model.Conf) (count int, err error) {
+	logger.Tracef("call CountClipboardHistory()")
+	err = DB.Get(&count, quecyCountClipboardHistory)
 	return
 }

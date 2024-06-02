@@ -61,6 +61,7 @@ func NewConfWithDefault() *Conf {
 	c.Client.Interval = 1000
 	c.Client.Connect = "http"
 	c.Client.XSelection = "clipboard"
+	c.Client.Timeout = 0
 
 	c.Server.DBPath = "./uclipboard.db"
 	c.Server.TmpPath = "./tmp/"
@@ -70,7 +71,6 @@ func NewConfWithDefault() *Conf {
 	c.Server.Port = 4533
 	c.Server.ClipboardHistoryPageSize = 20
 	c.Server.CacheMaxAge = 60 * 60 * 24 * 30 // 30 days
-	c.Client.Timeout = 0
 	return &c
 }
 
