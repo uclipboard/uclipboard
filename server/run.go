@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dangjinghao/uclipboard/model"
-	"github.com/dangjinghao/uclipboard/server/core"
-	"github.com/dangjinghao/uclipboard/server/frontend"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/uclipboard/uclipboard/model"
+	"github.com/uclipboard/uclipboard/server/core"
+	"github.com/uclipboard/uclipboard/server/frontend"
 )
 
 // ref: https://github.com/toorop/gin-logrus

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dangjinghao/uclipboard/model"
+	"github.com/uclipboard/uclipboard/model"
 )
 
 var ErrUnexpectRespStatus = errors.New("this response status code isn't ok")

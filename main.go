@@ -6,9 +6,9 @@ import (
 
 	"flag"
 
-	"github.com/dangjinghao/uclipboard/client"
-	"github.com/dangjinghao/uclipboard/model"
-	"github.com/dangjinghao/uclipboard/server"
+	"github.com/uclipboard/uclipboard/client"
+	"github.com/uclipboard/uclipboard/model"
+	"github.com/uclipboard/uclipboard/server"
 )
 
 func main() {

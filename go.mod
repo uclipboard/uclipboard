@@ -1,4 +1,4 @@
-module github.com/dangjinghao/uclipboard
+module github.com/uclipboard/uclipboard
 
 go 1.21.9
 

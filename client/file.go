@@ -11,8 +11,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/dangjinghao/uclipboard/model"
 	"github.com/sirupsen/logrus"
+	"github.com/uclipboard/uclipboard/model"
 )
 
 func UploadFile(filePath string, client *http.Client, c *model.Conf, logger *logrus.Entry) {

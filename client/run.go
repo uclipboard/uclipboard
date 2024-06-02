@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/dangjinghao/uclipboard/client/adapter"
-	"github.com/dangjinghao/uclipboard/model"
+	"github.com/uclipboard/uclipboard/client/adapter"
+	"github.com/uclipboard/uclipboard/model"
 )
 
 func Run(c *model.Conf) {

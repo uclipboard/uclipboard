@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dangjinghao/uclipboard/client/adapter"
-	"github.com/dangjinghao/uclipboard/model"
+	"github.com/uclipboard/uclipboard/client/adapter"
+	"github.com/uclipboard/uclipboard/model"
 )
 
 func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *http.Client) {

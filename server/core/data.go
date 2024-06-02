@@ -5,10 +5,10 @@ import (
 	"os"
 	"path"
 
-	"github.com/dangjinghao/uclipboard/model"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
+	"github.com/uclipboard/uclipboard/model"
 )
 
 var DB *sqlx.DB

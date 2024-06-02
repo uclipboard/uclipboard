@@ -3,8 +3,8 @@ package server
 import (
 	"time"
 
-	"github.com/dangjinghao/uclipboard/model"
-	"github.com/dangjinghao/uclipboard/server/core"
+	"github.com/uclipboard/uclipboard/model"
+	"github.com/uclipboard/uclipboard/server/core"
 )
 
 func TimerGC(conf *model.Conf) {

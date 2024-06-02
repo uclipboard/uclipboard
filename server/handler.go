@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dangjinghao/uclipboard/model"
-	"github.com/dangjinghao/uclipboard/server/core"
 	"github.com/gin-gonic/gin"
+	"github.com/uclipboard/uclipboard/model"
+	"github.com/uclipboard/uclipboard/server/core"
 )
 
 func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {

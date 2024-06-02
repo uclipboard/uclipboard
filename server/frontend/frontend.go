@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/dangjinghao/uclipboard/model"
 	"github.com/sirupsen/logrus"
+	"github.com/uclipboard/uclipboard/model"
 )
 
 //go:embed dist

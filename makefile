@@ -2,7 +2,7 @@ GO := go
 YARN := yarn
 VERSION := $(shell git describe --tags --abbrev=0)
 
-GO_LDFLAGS := "-X 'github.com/dangjinghao/uclipboard/model.Version=$(VERSION)' -s -w" 
+GO_LDFLAGS := "-X 'github.com/uclipboard/uclipboard/model.Version=$(VERSION)' -s -w" 
 
 BUILD_DIR := build
 FRONTEND_DIR := frontend-repo
@@ -13,7 +13,7 @@ FRONTEND_SRCS := $(shell find $(FRONTEND_DIR)/src $(FRONTEND_DIR)/public -type f
 
 TARGET := uclipboard
 
-TMP_BUILD_CMD := $(GO) build -ldflags="-X 'github.com/dangjinghao/uclipboard/model.Version=$(shell git describe --tags --always --dirty)'" -o $(BUILD_DIR)/$(TARGET) . #ignore optimization for debug
+TMP_BUILD_CMD := $(GO) build -ldflags="-X 'github.com/uclipboard/uclipboard/model.Version=$(shell git describe --tags --always --dirty)'" -o $(BUILD_DIR)/$(TARGET) . #ignore optimization for debug
 
 LOG_LEVEL := info
 
