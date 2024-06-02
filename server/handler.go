@@ -67,13 +67,13 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 			return
 		}
 		lifetime := ctx.Query("lifetime")
-		lifetimeMS, err := core.ConvertLifetime(lifetime, conf.Runtime.DefaultFileLifeMS)
+		lifetimeSecs, err := core.ConvertLifetime(lifetime, conf.Server.DefaultFileLife)
 		if err != nil {
 			logger.Debugf("ConvertLifetime error: %v", err)
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("invalid lifetime", nil))
 			return
 		}
-		logger.Tracef("lifetime: %vms", lifetimeMS)
+		logger.Tracef("lifetime: %vs", lifetimeSecs)
 
 		hostname := ctx.Request.Header.Get("hostname")
 		if hostname == "" {
@@ -90,7 +90,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		fileMetadata := model.NewFileMetadataWithDefault()
 		fileMetadata.FileName = file.Filename
 		fileMetadata.TmpPath = fmt.Sprintf("%s_%s", strconv.FormatInt(fileMetadata.CreatedTs, 10), file.Filename)
-		fileMetadata.ExpireTs = lifetimeMS + fileMetadata.CreatedTs
+		fileMetadata.ExpireTs = lifetimeSecs*1000 + fileMetadata.CreatedTs
 		logger.Debugf("Upload file metadata is: %v", fileMetadata)
 
 		// save file to tmp directory and get the path to save in db
@@ -129,7 +129,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		}
 
 		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
-			"life_time": lifetimeMS / 1000}) // ms -> s
+			"life_time": lifetimeSecs})
 		if err != nil {
 			logger.Debugf("Marshal response data error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("marshal response data error", nil))
@@ -184,7 +184,7 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 			err := core.GetFileMetadataRecordByIdOrName(metadata)
 			if err != nil {
 				if err == sql.ErrNoRows {
-					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("file not found or specified file is expired.", nil))
+					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("specified file not found or has expired.", nil))
 					return
 				}
 				ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get file metadata record error: "+err.Error(), nil))

@@ -8,6 +8,6 @@ type ClipboardCmdAdapter interface {
 }
 
 var (
-	ErrEmptyClipboard  = errors.New("adapter errors, perhaps system clipboard is empty")
-	ErrLockedClipboard = errors.New("adapter errors, perhaps system clipboard is locked so that cannot access it")
+	ErrEmptyClipboard  = errors.New("perhaps system clipboard is empty")
+	ErrLockedClipboard = errors.New("perhaps system clipboard is locked so that cannot access it")
 )

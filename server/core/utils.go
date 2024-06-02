@@ -5,23 +5,23 @@ import (
 	"strings"
 )
 
-// lifetime: ms	unit
+// lifetime: s unit
 func ConvertLifetime(lifetime string, defaultLifetime int64) (int64, error) {
-	var lifetimeMS int64
+	var lifetimeSecs int64
 	if lifetime != "" {
 		lifetimeInt, err := strconv.ParseInt(lifetime, 10, 64)
 		if err != nil {
 			return 0, err
 		}
-		lifetimeMS = lifetimeInt
+		lifetimeSecs = lifetimeInt
 	} else {
-		lifetimeMS = defaultLifetime
+		lifetimeSecs = defaultLifetime
 	}
 	// hardcode: the maximum lifetime is 90 days
-	if lifetimeMS > 1000*60*60*24*90 {
-		lifetimeMS = 1000 * 60 * 60 * 24 * 90
+	if lifetimeSecs > 60*60*24*90 {
+		lifetimeSecs = 60 * 60 * 24 * 90
 	}
-	return lifetimeMS, nil
+	return lifetimeSecs, nil
 }
 
 func ExtractFileId(s string, startChar string) int64 {

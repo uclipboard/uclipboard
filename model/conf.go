@@ -48,7 +48,6 @@ type Conf struct {
 		ShowHelp              bool
 		UploadFileLifetime    int64
 		UploadFileLifetimeStr string
-		DefaultFileLifeMS     int64
 	}
 }
 
@@ -89,6 +88,7 @@ func LoadConf(conf *Conf) *Conf {
 	return conf
 }
 
+// return secs
 func ParseTimeStr(t string) int64 {
 	logger := NewModuleLogger("time_parser")
 	if t == "" {
@@ -114,7 +114,7 @@ func ParseTimeStr(t string) int64 {
 		logger.Warnf("invalid lifetime: %s", t)
 		return 0
 	}
-	return numberNoUnit * unit * 1000
+	return numberNoUnit * unit
 
 }
 func FormatConf(conf *Conf) *Conf {
@@ -123,7 +123,6 @@ func FormatConf(conf *Conf) *Conf {
 	if len(conf.Client.ServerUrl) > 0 && conf.Client.ServerUrl[len(conf.Client.ServerUrl)-1] == '/' {
 		conf.Client.ServerUrl = conf.Client.ServerUrl[:len(conf.Client.ServerUrl)-1]
 	}
-	conf.Runtime.DefaultFileLifeMS = conf.Server.DefaultFileLife * 1000 // s -> ms
 
 	lifetimeInt := ParseTimeStr(conf.Runtime.UploadFileLifetimeStr)
 	conf.Runtime.UploadFileLifetime = lifetimeInt
