@@ -112,6 +112,11 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 			continue
 		}
 
+		if len(currentClipboard) > conf.MaxClipboardSize {
+			logger.Debugf("current clipboard size is too large, skip push")
+			continue
+		}
+
 		logger.Tracef("previousClipboard.Content %s[%v]\n", previousClipboard.Content, []byte(previousClipboard.Content))
 		logger.Tracef("currentClipboard %s[%v]\n", currentClipboard, []byte(currentClipboard))
 		if previousClipboard.Content != currentClipboard {

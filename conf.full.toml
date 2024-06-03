@@ -15,3 +15,4 @@ default_file_life = 300 #seconds, temporary uploaded file life
 timer_interval = 60 #seconds, the interval of rubbish cleaner timer
 clipboard_history_page_size = 20 # the number of items per page in history api
 cache_max_age = 2592000 # satic resource cache time: 30 days
+max_clipboard_size = 51200 #B, the max size of a clipboard content 

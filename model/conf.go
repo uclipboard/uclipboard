@@ -11,8 +11,9 @@ import (
 var Version string = "v0.0.0"
 
 type Conf struct {
-	Token  string `toml:"token"`
-	Client struct {
+	Token            string `toml:"token"`
+	MaxClipboardSize int    `toml:"max_clipboard_size"`
+	Client           struct {
 		ServerUrl  string `toml:"server_url"`
 		Connect    string `toml:"connect"`
 		Adapter    string `toml:"adapter"`
@@ -58,8 +59,11 @@ func NewConfWithDefault() *Conf {
 	// What a pity! it is too hard to resolve nest structure
 	// in a simple function.
 	c := Conf{}
+
+	c.MaxClipboardSize = 1024 * 50 // 50KB
+
 	c.Client.Interval = 1000
-	c.Client.Connect = "http"
+	c.Client.Connect = "polling"
 	c.Client.XSelection = "clipboard"
 	c.Client.Timeout = 0
 

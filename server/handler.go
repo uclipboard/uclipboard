@@ -26,6 +26,11 @@ func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("request is invalid.", nil))
 			return
 		}
+
+		if len(clipboardData.Content) > conf.MaxClipboardSize {
+			ctx.JSON(http.StatusRequestEntityTooLarge, model.NewDefaultServeRes(fmt.Sprintf("clipboard is too large[limit: %dB]", conf.MaxClipboardSize), nil))
+			return
+		}
 		if clipboardData.Content == "" {
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("content is empty", nil))
 			return

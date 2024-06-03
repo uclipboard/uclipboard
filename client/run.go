@@ -72,15 +72,20 @@ func Instant(c *model.Conf) {
 			logger.Fatalf("Read data from stdin error: %s", err.Error())
 		}
 
-		if len(in) != 0 {
-			if _, err := SendPushReq(string(in), client, c); err != nil {
-				logger.Fatalf("send push request error: %v", err)
-			}
-		} else {
+		if len(in) == 0 {
 			logger.Fatal("nothing readed")
+		} else if len(in) > c.MaxClipboardSize {
+			logger.Fatalf("stdin data size is too large, skip push")
+		}
+
+		if _, err := SendPushReq(string(in), client, c); err != nil {
+			logger.Fatalf("send push request error: %v", err)
 		}
 
 	} else if argMsg != "" {
+		if len(argMsg) > c.MaxClipboardSize {
+			logger.Fatalf("argument message size is too large, skip push")
+		}
 		logger.Debugf("upload argument message: %s", argMsg)
 		if _, err := SendPushReq(argMsg, client, c); err != nil {
 			logger.Fatalf("send push request error:%v", err)
