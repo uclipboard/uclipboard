@@ -4,11 +4,12 @@ VERSION := $(shell git describe --tags --abbrev=0)
 
 GO_LDFLAGS := "-X 'github.com/uclipboard/uclipboard/model.Version=$(VERSION)' -s -w" 
 
-BUILD_DIR := build
-FRONTEND_DIR := frontend-repo
-FRONTEND_DIST := server/frontend/dist
+BUILD_DIR := $(PWD)/build
+FRONTEND_DIR := $(PWD)/frontend-repo
+FRONTEND_DIST := $(PWD)/server/frontend/dist
+WATCHER := $(PWD)/watcher.sh
 
-SRCS := $(shell find . -type f -name "*.go")
+SRCS := $(shell find $(PWD) -type f -name "*.go")
 FRONTEND_SRCS := $(shell find $(FRONTEND_DIR)/src $(FRONTEND_DIR)/public -type f )
 
 TARGET := uclipboard
@@ -17,8 +18,11 @@ TMP_BUILD_CMD := $(GO) build -ldflags="-X 'github.com/uclipboard/uclipboard/mode
 
 LOG_LEVEL := info
 
+OTHER_ARGS := 
+
 build: $(BUILD_DIR)/$(TARGET)
 all: bin docker-image
+
 bin: $(SRCS) $(FRONTEND_DIST)/index.html
 	@echo "uclipboard version: $(VERSION)"
 	@mkdir -p $(BUILD_DIR)
@@ -29,33 +33,58 @@ docker-image: bin
 	@echo "building container"
 	@docker build -t djh233/uclipboard:$(VERSION) .
 	@docker build -t djh233/uclipboard:latest .
-	
-$(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
+
+build-target-nosync: 
 	@mkdir -p $(BUILD_DIR)
 	@echo "building $(TARGET) without any optimization"
 	@GOOS=linux GOARCH=amd64 $(TMP_BUILD_CMD)
+	@echo "building completed"
+
+$(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
+	@make build-target-nosync
 
 $(FRONTEND_DIST)/index.html: $(FRONTEND_SRCS) 
 	@echo "building frontend"
 	@cd $(FRONTEND_DIR) && $(YARN) install && $(YARN) build
 	@echo "moving frontend dist to server"
-	cp -rT $(FRONTEND_DIR)/dist/ $(FRONTEND_DIST)/
+	@cp -rT $(FRONTEND_DIR)/dist/ $(FRONTEND_DIST)/
 
 
-build-frontend: $(FRONTEND_DIST)/index.html
+watch-build:
+	@$(WATCHER) "build" "$(SRCS) $(FRONTEND_SRCS)" "$(YARN)" "$(LOG_LEVEL)" "$(OTHER_ARGS)"
 
+watch-dev:
+	@$(WATCHER) "dev" "$(SRCS)" "$(YARN)" "$(LOG_LEVEL)" "--test ct" #yarn dev will watch those FRONTEND_SRCS
+	
+
+dev-frontend:
+	@echo "building frontend in dev mode"
+	@cd $(FRONTEND_DIR) &&$(YARN) install &&$(YARN) dev --host
+
+
+test:
+	
 clean:
 	@rm -f $(BUILD_DIR)/uclipboard*
 	@rm -rf $(FRONTEND_DIST)/*
 	
-run: $(BUILD_DIR)/$(TARGET)
-	@echo "run one local clinet and server on tmux" && sleep 1
-	@tmux new-session -n run_uclipboard "$(SHELL) -c '$(BUILD_DIR)/$(TARGET) --mode server --log-level $(LOG_LEVEL); $(SHELL)'"  \
-		\; split-window -h "$(SHELL) -c '$(BUILD_DIR)/$(TARGET) --mode client --log-level $(LOG_LEVEL); $(SHELL)'" 
+run-client: $(BUILD_DIR)/$(TARGET)
+	@echo "run local client"
+	@cd $(BUILD_DIR) && ./$(TARGET) --mode client --log-level $(LOG_LEVEL)
 
 run-server: $(BUILD_DIR)/$(TARGET)
 	@echo "run local server"
+	@cd $(BUILD_DIR) && ./$(TARGET) --mode server --log-level $(LOG_LEVEL) $(OTHER_ARGS)
 
-	@cd $(BUILD_DIR) && ./$(TARGET) --mode server --log-level $(LOG_LEVEL)
+run-server-nosync: $(SRCS)
+	@make build-target-nosync
+	@echo "run local server"
+	@cd $(BUILD_DIR) && ./$(TARGET) --mode server --log-level $(LOG_LEVEL) $(OTHER_ARGS)
 
-.PHONY: clean all run build-frontend run-server build docker-image bin
+run-client-nosync: $(SRCS)
+	@make build-target-nosync
+	@echo "run local server"
+	@cd $(BUILD_DIR) && ./$(TARGET) --mode client --log-level $(LOG_LEVEL) $(OTHER_ARGS)
+
+
+.PHONY: clean all run build-frontend run-server build docker-image bin run-watch test dev-frontend build-target-nosync
