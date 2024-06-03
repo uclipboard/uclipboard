@@ -49,6 +49,7 @@ dev-client(){
 	while true; do
 		make run-client-nosync YARN="$YARN" LOG_LEVEL="$LOG_LEVEL" OTHER_ARGS="$OTHER_ARGS"&
 		inotifywait -e close_write,moved_to,create $WATCH_SRCS
+		sleep $((RANDOM % 4)) # avoid compile-race
 		ps aux|grep -v grep|grep "make run-client"|awk '{print $2}' |xargs kill
 	done
 
