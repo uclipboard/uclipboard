@@ -110,17 +110,20 @@ func Run(c *model.Conf) {
 		r.Use(cors.New(corsConfig))
 	}
 
-	r.Use(cacheMiddleware(c))
+	if !strings.Contains(c.Runtime.Test, "f") {
+		r.Use(cacheMiddleware(c))
+		// icon
+		r.StaticFileFS("/favicon.ico", "favicon.ico", frontend.FrontendRootFS())
+		// index or anything
+		r.NoRoute(func(c *gin.Context) {
+			c.FileFromFS("/", frontend.FrontendRootFS())
+		})
+		// assets
+		r.StaticFS("/assets", frontend.AssetsFS())
+	} else {
+		logger.Warn("Frontend is disabled")
 
-	// icon
-	r.StaticFileFS("/favicon.ico", "favicon.ico", frontend.FrontendRootFS())
-	// index or anything
-	r.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("/", frontend.FrontendRootFS())
-	})
-	// assets
-	r.StaticFS("/assets", frontend.AssetsFS())
-
+	}
 	// api
 	api := r.Group(model.ApiPrefix)
 	api.Use(removeCacheMiddleware())

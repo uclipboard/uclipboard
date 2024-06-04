@@ -29,7 +29,7 @@ func InitFlags(conf *Conf) {
 		"(instant mode) specify the file name you want to download."+
 			"You can specify the file name to download the latest same name file."+
 			"You can also specify file id by @id to download the file you want. e.g. -download @123")
-	flag.StringVar(&conf.Runtime.Test, "test", "", "componments test, [ct] `c`: allow all cors request. `t`: disable token check ... multi-char is allowed. e.g. -test ct")
+	flag.StringVar(&conf.Runtime.Test, "test", "", "componments test, [ctf] `c`: allow all cors request. `t`: disable token check `f`: disable frontend... multi-char is allowed. e.g. -test ct")
 	flag.BoolVar(&conf.Runtime.Pull, "pull", false, "(instant mode) pull clipboard data.")
 	flag.BoolVar(&conf.Runtime.Latest, "latest", false, "(instant mode) download latest file.")
 	flag.StringVar(&conf.Runtime.UploadFileLifetimeStr, "lifetime", "", "(instant mode) specify the file lifetime. (support unit: s, m, h, d)")

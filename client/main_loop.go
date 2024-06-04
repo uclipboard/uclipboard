@@ -108,7 +108,7 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 		}
 
 		if currentClipboard == "" {
-			logger.Debug("skip current loop because current clipboard is empty")
+			logger.Debug("skip push detect because current clipboard is empty")
 			continue
 		}
 
