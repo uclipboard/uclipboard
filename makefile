@@ -54,7 +54,7 @@ watch-build:
 	@$(WATCHER) "build" "$(SRCS) $(FRONTEND_SRCS)" "$(YARN)" "$(LOG_LEVEL)" "$(OTHER_ARGS)"
 
 watch-dev:
-	@$(WATCHER) "dev" "$(SRCS)" "$(YARN)" "$(LOG_LEVEL)" "--test ct" #yarn dev will watch those FRONTEND_SRCS
+	@$(WATCHER) "dev" "$(SRCS)" "$(YARN)" "$(LOG_LEVEL)" "--test ctf" $(BUILD_DIR)/$(TARGET) #yarn dev will watch those FRONTEND_SRCS
 	
 
 dev-frontend:
@@ -83,7 +83,7 @@ run-server-nosync: $(SRCS)
 
 run-client-nosync: $(SRCS)
 	@make build-target-nosync
-	@echo "run local server"
+	@echo "run local client"
 	@cd $(BUILD_DIR) && ./$(TARGET) --mode client --log-level $(LOG_LEVEL) $(OTHER_ARGS)
 
 
