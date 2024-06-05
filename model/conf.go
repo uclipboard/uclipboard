@@ -65,7 +65,7 @@ func NewConfWithDefault() *Conf {
 	c.Client.Interval = 1000
 	c.Client.Connect = "polling"
 	c.Client.XSelection = "clipboard"
-	c.Client.Timeout = 0
+	c.Client.Timeout = 10000
 
 	c.Server.DBPath = "./uclipboard.db"
 	c.Server.TmpPath = "./tmp/"

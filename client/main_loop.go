@@ -35,6 +35,16 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 
 			} else {
 				logger.Warnf("send pull request error: %v", err)
+
+				// when my laptop wakes up from sleep, the connection would never be activated.
+				// so I try to close ide connections and recreate a client
+				logger.Warn("close idle connections")
+				client.CloseIdleConnections()
+				// it looks like that close idle connections is enough,
+				// but maybe it is better to recreate a new client
+				logger.Warn("create a new client")
+				client = NewUClipboardHttpClient(conf)
+
 				if dynamicSleepTime <= 60*time.Second {
 					dynamicSleepTime *= 2
 					logger.Debugf("increase sleep time to %v", dynamicSleepTime)
