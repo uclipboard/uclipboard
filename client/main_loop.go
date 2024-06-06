@@ -4,63 +4,191 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/uclipboard/uclipboard/client/adapter"
 	"github.com/uclipboard/uclipboard/model"
 )
 
-func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *http.Client) {
+type loopContenxt struct {
+	conf                 *model.Conf
+	client               *http.Client
+	adapter              adapter.ClipboardCmdAdapter
+	logger               *logrus.Entry
+	dynamicSleepTime     time.Duration
+	lockedWarningCounter int
+	previousClipboard    model.Clipboard //skip init the memory
+}
+
+func (ctx *loopContenxt) stagePull() ([]byte, bool) {
+	logger := ctx.logger
+	logger.Trace("into loopPullStage")
+
+	body, pullErr := SendPullReq(ctx.client, ctx.conf)
+	if pullErr != nil {
+		if pullErr == ErrUnexpectRespStatus {
+			logger.Tracef("the response body when received unexpected response status occured: %q", string(body))
+			serverMsg, extractErr := ExtractErrorMsg(body)
+			if extractErr != nil {
+				logger.Warnf("extract error msg error: %v", extractErr)
+				return nil, false
+			}
+			if serverMsg == "" {
+				logger.Warn("server msg is empty, please check the server log for more information")
+				return nil, false
+			}
+			logger.Warnf("receive unexpceted server msg: %s", serverMsg)
+		} else {
+			logger.Warnf("send pull request error: %v", pullErr)
+			// when my laptop wakes up from sleep, the connection would never be activated.
+			// so I try to close ide connections and recreate a client
+			logger.Warn("reset client because of connection error")
+			logger.Debug("close idle connections")
+			ctx.client.CloseIdleConnections()
+			// it looks like that close idle connections is enough,
+			// but maybe it is better to recreate a new client
+			logger.Debug("create a new client")
+			ctx.client = NewUClipboardHttpClient(ctx.conf)
+
+			if ctx.dynamicSleepTime <= 60*time.Second {
+				ctx.dynamicSleepTime *= 2
+				logger.Debugf("increase sleep time to %v", ctx.dynamicSleepTime)
+			} else {
+				logger.Debugf("interval time has been arrived the maxmium value:%v", ctx.dynamicSleepTime)
+			}
+		}
+
+		return nil, false
+	}
+
+	if ctx.dynamicSleepTime != time.Duration(ctx.conf.Client.Interval)*time.Millisecond {
+		ctx.logger.Debug("reset sleep time because the connection is activated.")
+		ctx.dynamicSleepTime = time.Duration(ctx.conf.Client.Interval) * time.Millisecond
+	}
+
+	return body, true
+}
+
+func (ctx *loopContenxt) stageCopy(currentClipboard *model.Clipboard) bool {
+	s := DetectAndConcatFileUrl(ctx.conf, currentClipboard)
+	ctx.logger.Tracef("copy modify: %q => %q", currentClipboard.Content, s)
+	E := ctx.adapter.Copy(s)
+	if E != nil {
+		ctx.logger.Warnf("adapter.Copy error: %v", E)
+		return false
+	}
+	return true
+}
+
+// ret:
+// 0: previous clipboard is up-to-date,should check/upload the system clipboard,
+// others: previous clipboard is updated, should update the system clipboard
+func (ctx *loopContenxt) stageRemoteDecision(remoteClipboards []model.Clipboard) int {
+	previousClipboardHistoryidx := model.IndexClipboardArray(remoteClipboards, &ctx.previousClipboard)
+
+	if previousClipboardHistoryidx == -1 {
+		ctx.logger.Debug("update previousClipboard")
+		ctx.previousClipboard = remoteClipboards[0]
+		return -1
+
+	} else if previousClipboardHistoryidx > 0 {
+		ctx.logger.Debug("update previousClipboard")
+		ctx.previousClipboard = remoteClipboards[0]
+		return 1
+	}
+	ctx.logger.Tracef("previousClipboard.Content: %s", ctx.previousClipboard.Content)
+
+	// else: previousClipboardHistoryidx == 0, detect whether the current clipboard is updated.
+	return 0
+}
+
+func (ctx *loopContenxt) stagePaste() (string, bool) {
+	currentClipboard, E := ctx.adapter.Paste()
+	if E != nil {
+		if E == adapter.ErrEmptyClipboard {
+			ctx.logger.Debugf(`adapter.Paste error:%v, set empty string clipboard.`, E)
+			currentClipboard = ""
+		} else if E == adapter.ErrLockedClipboard {
+			if ctx.lockedWarningCounter < 3 {
+				ctx.logger.Info("clipboard is locked, skip push")
+				ctx.lockedWarningCounter++
+			} else {
+				ctx.logger.Debugf("clipboard is locked, skip push, but the warning counter has reached the maximum value: %v", ctx.lockedWarningCounter)
+			}
+			return "", false
+		} else {
+			ctx.logger.Warnf("adapter.Paste error:%v", E)
+			return "", false
+		}
+
+	}
+
+	if currentClipboard == "" {
+		ctx.logger.Debug("skip push detect because current clipboard is empty")
+		return "", false
+	}
+
+	if len(currentClipboard) > ctx.conf.MaxClipboardSize {
+		ctx.logger.Debug("current clipboard size is too large, skip push")
+		return "", false
+	}
+
+	if ctx.lockedWarningCounter > 0 {
+		ctx.logger.Info("clipboard is unlocked, reset the warning counter")
+		ctx.lockedWarningCounter = 0
+	}
+	return currentClipboard, true
+}
+
+func (ctx *loopContenxt) stageLocalDecision(currentClipboard string) (doPush bool) {
+
+	ctx.logger.Tracef("previousClipboard.Content %s[%v]\n", ctx.previousClipboard.Content, []byte(ctx.previousClipboard.Content))
+	ctx.logger.Tracef("currentClipboard %s[%v]\n", currentClipboard, []byte(currentClipboard))
+	if ctx.previousClipboard.Content != currentClipboard {
+		clipboardContentIfIsFile := DetectAndConcatFileUrl(ctx.conf, &ctx.previousClipboard)
+		if currentClipboard == clipboardContentIfIsFile {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func (ctx *loopContenxt) stagePush(currentClipboard string) bool {
+	ctx.logger.Debugf("(PUSH =>) %s", currentClipboard)
+	var wrappedCLipboard *model.Clipboard
+	var err error
+	if wrappedCLipboard, err = SendPushReq(currentClipboard, ctx.client, ctx.conf); err != nil {
+		ctx.logger.Warnf("send push request error: %v", err)
+		return false
+	}
+	ctx.previousClipboard = *wrappedCLipboard
+	return true
+}
+
+func mainLoop(conf *model.Conf, theAdapter adapter.ClipboardCmdAdapter, client *http.Client) {
 	logger := model.NewModuleLogger("loop")
 	logger.Tracef("into mainLoop")
-	var previousClipboard model.Clipboard
+
 	dynamicSleepTime := time.Duration(conf.Client.Interval) * time.Millisecond
 	logger.Debugf("default sleep time: %v", dynamicSleepTime)
+	ctx := loopContenxt{
+		conf:             conf,
+		client:           client,
+		adapter:          theAdapter,
+		logger:           logger,
+		dynamicSleepTime: dynamicSleepTime,
+	}
+
 	for {
-		logger.Tracef("sleep %v begin", dynamicSleepTime)
-		time.Sleep(dynamicSleepTime) //sleep first to avoid the possible occured error then it skip sleep
+		logger.Tracef("sleep %v begin", ctx.dynamicSleepTime)
+		time.Sleep(ctx.dynamicSleepTime) //sleep first to avoid the possible occured error make the loop skips sleep
 		logger.Trace("sleep end")
-		body, err := SendPullReq(client, conf)
-		if err != nil {
-			if err == ErrUnexpectRespStatus {
-				logger.Tracef("the response body when ErrUnexpectRespStatus occured: %q", string(body))
-				serverMsg, err := ExtractErrorMsg(body)
-				if err != nil {
-					logger.Warnf("extrace error msg error: %v", err)
-					continue
-				}
-				if serverMsg == "" {
-					logger.Warn("server msg is empty, please check the server log for more information")
-					continue
-				}
-				logger.Warnf("receive server msg: %s", serverMsg)
-
-			} else {
-				logger.Warnf("send pull request error: %v", err)
-
-				// when my laptop wakes up from sleep, the connection would never be activated.
-				// so I try to close ide connections and recreate a client
-				logger.Warn("close idle connections")
-				client.CloseIdleConnections()
-				// it looks like that close idle connections is enough,
-				// but maybe it is better to recreate a new client
-				logger.Warn("create a new client")
-				client = NewUClipboardHttpClient(conf)
-
-				if dynamicSleepTime <= 60*time.Second {
-					dynamicSleepTime *= 2
-					logger.Debugf("increase sleep time to %v", dynamicSleepTime)
-				} else {
-					logger.Debugf("interval time has been arrived the maxmium value:%v", dynamicSleepTime)
-				}
-			}
-
+		body, ok := ctx.stagePull()
+		if !ok {
 			continue
 		}
 
 		logger.Tracef("current response body: %q", string(body))
-		if dynamicSleepTime != time.Duration(conf.Client.Interval)*time.Millisecond {
-			logger.Debug("reset sleep time because the connection is activated.")
-			dynamicSleepTime = time.Duration(conf.Client.Interval) * time.Millisecond
-		}
 		remoteClipboards, err := ParsePullData(body)
 		if err != nil {
 			logger.Warnf("error parsing response body: %s", err)
@@ -79,71 +207,35 @@ func mainLoop(conf *model.Conf, adapterObj adapter.ClipboardCmdAdapter, client *
 		// but what we need is a new copied text1
 		// even though text1 is same as previous text1
 
-		previousClipboardHistoryidx := model.IndexClipboardArray(remoteClipboards, &previousClipboard)
-		clipboardContentIfIsFile := DetectAndConcatFileUrl(conf, &remoteClipboards[0])
-
-		if previousClipboardHistoryidx == -1 {
-			previousClipboard = remoteClipboards[0]
-			logger.Info("This is a new client, synchronizing from server...")
-			E := adapterObj.Copy(clipboardContentIfIsFile)
-
-			if E != nil {
-				logger.Warnf("adapter.Copy error:%v", E)
+		previousClipboardHistoryidx := ctx.stageRemoteDecision(remoteClipboards)
+		switch previousClipboardHistoryidx {
+		case -1:
+			ctx.logger.Info("This is a new client, synchronizing from server...")
+			if ok = ctx.stageCopy(&ctx.previousClipboard); !ok {
 				continue
 			}
-			logger.Info("synchronize data completed.")
-			logger.Tracef("previousClipboard.Content: %s", previousClipboard.Content)
+			ctx.logger.Info("synchronize data completed.")
 			continue
-		} else if previousClipboardHistoryidx > 0 {
-			logger.Debugf("(PULL <=) %v [%v]", remoteClipboards[0].Content, remoteClipboards[0].Hostname)
-			previousClipboard = remoteClipboards[0]
-			E := adapterObj.Copy(clipboardContentIfIsFile)
-			if E != nil {
-				logger.Warnf("adapter.Copy error:%v", E)
+		case 1:
+			ctx.logger.Debugf("(PULL <=) %q [%v]", ctx.previousClipboard.Content, ctx.previousClipboard.Hostname)
+			if ok = ctx.stageCopy(&ctx.previousClipboard); !ok {
 				continue
 			}
+			ctx.logger.Debug("pull data completed.")
 			continue
 		}
-		// else: previousClipboardHistoryidx == 0, detect whether the current clipboard is updated.
-		currentClipboard, E := adapterObj.Paste()
-		if E != nil {
-			if E == adapter.ErrEmptyClipboard {
-				logger.Debugf(`adapter.Paste error:%v ,set empty string clipboard.`, E)
-				currentClipboard = ""
-			} else {
-				logger.Warnf("adapter.Paste error:%v", E)
-				continue
-			}
+		// case 0: check system clipboard and maybe push
 
-		}
-
-		if currentClipboard == "" {
-			logger.Debug("skip push detect because current clipboard is empty")
+		currentClipboard, ok := ctx.stagePaste()
+		if !ok {
 			continue
 		}
 
-		if len(currentClipboard) > conf.MaxClipboardSize {
-			logger.Debugf("current clipboard size is too large, skip push")
-			continue
-		}
-
-		logger.Tracef("previousClipboard.Content %s[%v]\n", previousClipboard.Content, []byte(previousClipboard.Content))
-		logger.Tracef("currentClipboard %s[%v]\n", currentClipboard, []byte(currentClipboard))
-		if previousClipboard.Content != currentClipboard {
-			if currentClipboard == clipboardContentIfIsFile {
-				logger.Debug("currentClipboard is file url clipboard, skip push")
+		if doPush := ctx.stageLocalDecision(currentClipboard); doPush {
+			if ok = ctx.stagePush(currentClipboard); !ok {
 				continue
 			}
-			logger.Debugf("(PUSH =>) %s", currentClipboard)
-			var wrappedCLipboard *model.Clipboard
-			if wrappedCLipboard, err = SendPushReq(currentClipboard, client, conf); err != nil {
-				logger.Warnf("send push request error: %v", err)
-				continue
-			}
-			previousClipboard = *wrappedCLipboard
-			continue
 		}
-
 		logger.Debug("current clipboard is up-to-date")
 
 	}

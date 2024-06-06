@@ -77,7 +77,8 @@ func NewUClipboardHttpClient(c *model.Conf) *http.Client {
 	return client
 }
 
-// if this clipboard content is a binary file, return the download url
+// if this clipboard content is a binary file, return the download url,
+// else return the raw content itself
 func DetectAndConcatFileUrl(conf *model.Conf, clipboard *model.Clipboard) string {
 	content := clipboard.Content
 	if clipboard.ContentType == "binary" {

@@ -40,8 +40,6 @@ func TimerGC(conf *model.Conf) {
 		} else {
 			logger.Debugf("Expired files count: %d", len(expiredFiles))
 		}
-		// TODO: clean clipboard data
-		// I think delete clipboard records is not a good idea
 		time.Sleep(interval)
 	}
 }
