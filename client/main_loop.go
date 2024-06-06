@@ -122,6 +122,11 @@ func (ctx *loopContenxt) stagePaste() (string, bool) {
 
 	}
 
+	if ctx.lockedWarningCounter > 0 {
+		ctx.logger.Info("clipboard is unlocked, reset the warning counter")
+		ctx.lockedWarningCounter = 0
+	}
+
 	if currentClipboard == "" {
 		ctx.logger.Debug("skip push detect because current clipboard is empty")
 		return "", false
@@ -132,10 +137,6 @@ func (ctx *loopContenxt) stagePaste() (string, bool) {
 		return "", false
 	}
 
-	if ctx.lockedWarningCounter > 0 {
-		ctx.logger.Info("clipboard is unlocked, reset the warning counter")
-		ctx.lockedWarningCounter = 0
-	}
 	return currentClipboard, true
 }
 
