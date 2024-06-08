@@ -71,7 +71,7 @@ func NewConfWithDefault() *Conf {
 	c.Server.TmpPath = "./tmp/"
 	c.Server.TimerInterval = 60
 	c.Server.PullHistorySize = 5
-	c.Server.DefaultFileLife = 60 * 5 //ms 5min
+	c.Server.DefaultFileLife = 60 * 5 //s 3m
 	c.Server.Port = 4533
 	c.Server.ClipboardHistoryPageSize = 20
 	c.Server.CacheMaxAge = 60 * 60 * 24 * 30 // 30 days
