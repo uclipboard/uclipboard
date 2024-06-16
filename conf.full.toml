@@ -1,18 +1,30 @@
 token = "" #necessary, modify it for your security!
-[client]
-server_url = "http://example.com:4533/" #necessary
-connect = "http" #todo, specify http or ws connect mode in the fulture
-adapter = "wl" #necessary, wl/xc/wc wl: wl-clipboard, xc: xclip, wc: win-clip
+content_length_limit = 51200 #B, the max size of a clipboard content
+
+[client.connect]
+
+url = "http://example.com:4533/" #necessary
+method = "polling" #todo, specify http or ws connect mode in the fulture
 interval = 1000 #ms, the interval of clipboard polling
 X_selection = "clipboard" # select the clipboard which you want to copy/paste in xc adapter
 timeout = 10000 #ms, the timeout of http client request, if 0, uclipboard will create a default (wait forever) client
+
+[client.adapter]
+method = "" #necessary, specify the adapter method, e.g. "xc" for xclip, "pb" for pbcopy/pbpaste
+interval = 1000 #ms, the interval of clipboard polling
+X_selection = "clipboard" # select the clipboard which you want to copy/paste in xc adapter
+
 [server]
+timer_interval = 60 #seconds, the interval of rubbish cleaner timer
+
+[server.store]
 db_path = "./uclipboard.db" 
-pull_history_size = 5 # the number of items returned by server in the pull api 
-port = 4533 
 tmp_path = "./tmp/" #temporary uploaded file path
 default_file_life = 300 #seconds, temporary uploaded file life
-timer_interval = 60 #seconds, the interval of rubbish cleaner timer
-clipboard_history_page_size = 20 # the number of items per page in history api
-cache_max_age = 2592000 # satic resource cache time: 30 days
-max_clipboard_size = 51200 #B, the max size of a clipboard content 
+max_clipboard_record_number = 0 # the max number of clipboard records, if 0, uclipboard don't remove outdated records
+
+[server.api]
+pull_size = 5 # the number of clipboard records to pull per request
+history_page_size = 20 # the number of clipboard records per page in history api
+port = 4533 
+cache_max_age = 2592000 #seconds, 30 days in default the max age of cache

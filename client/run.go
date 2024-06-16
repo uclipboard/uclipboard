@@ -9,14 +9,14 @@ import (
 	"github.com/uclipboard/uclipboard/model"
 )
 
-func Run(c *model.Conf) {
+func Run(c *model.UContext) {
 	var clipboardAdapter adapter.ClipboardCmdAdapter
 	logger := model.NewModuleLogger("client")
-	switch c.Client.Adapter {
+	switch c.Client.Adapter.Method {
 	case "wl":
 		clipboardAdapter = adapter.NewWl()
 	case "xc":
-		clipboardAdapter = adapter.NewXClip(c.Client.XSelection)
+		clipboardAdapter = adapter.NewXClip(c.Client.Adapter.XSelection)
 	case "wc":
 		clipboardAdapter = adapter.NewWinClip()
 	default:
@@ -27,7 +27,7 @@ func Run(c *model.Conf) {
 	mainLoop(c, clipboardAdapter, client)
 }
 
-func Instant(c *model.Conf) {
+func Instant(c *model.UContext) {
 	client := NewUClipboardHttpClient(c)
 	logger := model.NewModuleLogger("instant")
 	argMsg := c.Runtime.PushMsg
@@ -74,7 +74,7 @@ func Instant(c *model.Conf) {
 
 		if len(in) == 0 {
 			logger.Fatal("nothing readed")
-		} else if len(in) > c.MaxClipboardSize {
+		} else if len(in) > c.ContentLengthLimit {
 			logger.Fatalf("stdin data size is too large, skip push")
 		}
 
@@ -83,7 +83,7 @@ func Instant(c *model.Conf) {
 		}
 
 	} else if argMsg != "" {
-		if len(argMsg) > c.MaxClipboardSize {
+		if len(argMsg) > c.ContentLengthLimit {
 			logger.Fatalf("argument message size is too large, skip push")
 		}
 		logger.Debugf("upload argument message: %s", argMsg)

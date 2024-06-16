@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -13,7 +14,7 @@ import (
 
 func main() {
 	// create default config struct
-	conf := model.NewConfWithDefault()
+	conf := model.NewUCtxWithDefault()
 
 	model.InitFlags(conf)
 	if conf.Runtime.ShowVersion {
@@ -36,7 +37,12 @@ func main() {
 	logger := model.NewModuleLogger("entry")
 
 	logger.Debugf("running Mode: %s", conf.Runtime.Mode)
-	logger.Debugf("config info:%v", conf)
+	confBytes, err := json.Marshal(conf)
+	if err != nil {
+		logger.Fatalf("can't marshal config: %v", err)
+	}
+	logger.Debugf("config: %s", string(confBytes))
+
 	switch conf.Runtime.Mode {
 	case "server":
 		server.Run(conf)

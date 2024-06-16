@@ -14,68 +14,74 @@ import (
 var DB *sqlx.DB
 
 var (
-	clipboard_table_name = "clipboard_data"
-	clipboard_schema     = fmt.Sprintf(`CREATE TABLE if not exists %s (
+	clipboardTableName   = "clipboard_data"
+	clipboardTableSchema = fmt.Sprintf(`CREATE TABLE if not exists %s (
 		id integer primary key autoincrement,
 		ts bigint not null,
 		content text,
 		hostname varchar(128) default 'unknown',
 		content_type varchar(128) default 'text'
 		);
-	`, clipboard_table_name)
+	`, clipboardTableName)
 	addFirstRecordToClipboardTable = fmt.Sprintf(`insert into %s
 	(ts,content,hostname,content_type) select
 	0,'uclipboard started!','uclipboard','text' where (select count(*) from %s) = 0
-	`, clipboard_table_name, clipboard_table_name)
+	`, clipboardTableName, clipboardTableName)
 	insertClipboard = fmt.Sprintf(`insert into %s 
 	(ts,content,hostname,content_type) values
 	(:ts,:content,:hostname,:content_type)
-	`, clipboard_table_name)
+	`, clipboardTableName)
 	getLatestClipboard = fmt.Sprintf(`select * from %s
-	order by id desc limit `, clipboard_table_name) + "%d"  //format limit N support
+	order by id desc limit `, clipboardTableName) + "%d"  //format limit N support
 
-	file_metadata_table_name = "file_metadata"
-	file_metadata_schema     = fmt.Sprintf(`CREATE TABLE if not exists %s (
+	fileMetadataTableName = "file_metadata"
+	fileMetadataSchema    = fmt.Sprintf(`CREATE TABLE if not exists %s (
 		id integer primary key autoincrement,
 		created_ts bigint not null,
 		expire_ts bigint not null,
 		file_name varchar(128) not null,
 		tmp_path varchar(256) not null
 		);
-	`, file_metadata_table_name)
+	`, fileMetadataTableName)
 
 	insertFileMetadata = fmt.Sprintf(`insert into %s
 	(created_ts,expire_ts,file_name,tmp_path) values
 	(:created_ts,:expire_ts,:file_name,:tmp_path)
-	`, file_metadata_table_name)
+	`, fileMetadataTableName)
 	deleteFileMetadataById = fmt.Sprintf(`delete from %s
 	where id = ?
-	`, file_metadata_table_name)
+	`, fileMetadataTableName)
 
 	queryFileMetadataByExpireTs = fmt.Sprintf(`select * from %s
 	where expire_ts < ?
-	`, file_metadata_table_name)
+	`, fileMetadataTableName)
 
 	queryFileMetadataByIdOrName = fmt.Sprintf(`select * from %s
 	where id = ? or file_name = ? order by created_ts desc limit 1 
-	`, file_metadata_table_name)
+	`, fileMetadataTableName)
 	queryFileMetadataLatest = fmt.Sprintf(`select * from %s
 	order by created_ts desc limit 1
-	`, file_metadata_table_name)
+	`, fileMetadataTableName)
 
 	queryClipboardHistoryWithPage = fmt.Sprintf(`select * from %s
 	order by id desc limit ? offset ?
-	`, clipboard_table_name)
-	quecyCountClipboardHistory = fmt.Sprintf(`select count(*) from %s
-	`, clipboard_table_name)
+	`, clipboardTableName)
+	queryCountClipboardHistory = fmt.Sprintf(`select count(*) from %s
+	`, clipboardTableName)
+
+	deleteOldNClipboard = fmt.Sprintf(`delete from %s
+	where id in (
+		select id from %s
+		order by id asc limit ?
+	)`, clipboardTableName, clipboardTableName)
 )
 var logger *logrus.Entry
 
-func InitDB(c *model.Conf) {
+func InitDB(c *model.UContext) {
 	logger = model.NewModuleLogger("DB") //InitDB is abosultely the first function to be called in server.Run
-	DB = sqlx.MustConnect("sqlite3", c.Server.DBPath)
-	DB.MustExec(clipboard_schema)
-	DB.MustExec(file_metadata_schema)
+	DB = sqlx.MustConnect("sqlite3", c.Server.Store.DBPath)
+	DB.MustExec(clipboardTableSchema)
+	DB.MustExec(fileMetadataSchema)
 	firsftRecordInsetResult := DB.MustExec(addFirstRecordToClipboardTable)
 	N, err := firsftRecordInsetResult.RowsAffected()
 	if err != nil {
@@ -135,31 +141,51 @@ func DelFileMetadataRecordById(d *model.FileMetadata) (err error) {
 	return
 }
 
-func DelTmpFile(conf *model.Conf, d *model.FileMetadata) (err error) {
+func DelTmpFile(conf *model.UContext, d *model.FileMetadata) (err error) {
 	logger.Tracef("call DelTmpFile(%v)", d)
-	err = os.Remove(path.Join(conf.Server.TmpPath, d.TmpPath))
+	err = os.Remove(path.Join(conf.Server.Store.TmpPath, d.TmpPath))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func QueryExpiredFiles(conf *model.Conf, t int64) (expiredFiles []model.FileMetadata, err error) {
+func QueryExpiredFiles(conf *model.UContext, t int64) (expiredFiles []model.FileMetadata, err error) {
 	logger.Tracef("call QueryExpiredFiles(%v)", t)
 	err = DB.Select(&expiredFiles, queryFileMetadataByExpireTs, t)
 	return
 }
 
-func QueryClipboardHistory(conf *model.Conf, page int) (clipboards []model.Clipboard, err error) {
+func QueryClipboardHistory(conf *model.UContext, page int) (clipboards []model.Clipboard, err error) {
 	logger.Tracef("call QueryClipboardHistory(%v)", page)
 	err = DB.Select(&clipboards, queryClipboardHistoryWithPage,
-		conf.Server.ClipboardHistoryPageSize,
-		(page-1)*conf.Server.ClipboardHistoryPageSize)
+		conf.Server.Api.HistoryPageSize,
+		(page-1)*conf.Server.Api.HistoryPageSize)
 	return
 }
 
-func CountClipboardHistory(conf *model.Conf) (count int, err error) {
+func CountClipboardHistory(conf *model.UContext) (count int, err error) {
 	logger.Tracef("call CountClipboardHistory()")
-	err = DB.Get(&count, quecyCountClipboardHistory)
+	err = DB.Get(&count, queryCountClipboardHistory)
+	return
+}
+
+func DeleteOutdatedClipboard(conf *model.UContext) (err error) {
+	logger.Trace("call DeleteOutdatedClipboard()")
+	var count int
+	err = DB.Get(&count, queryCountClipboardHistory)
+	if err != nil {
+		return
+	}
+
+	if count > conf.Server.Store.MaxClipboardRecordNumber {
+		logger.Debugf("delete %d old clipboard records", count-conf.Server.Store.MaxClipboardRecordNumber)
+
+		_, err = DB.Exec(deleteOldNClipboard, count-conf.Server.Store.MaxClipboardRecordNumber)
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }

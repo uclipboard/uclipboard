@@ -28,7 +28,7 @@ func GenClipboardReqBody(c string) ([]byte, *model.Clipboard, error) {
 	return reqBody, reqData, nil
 }
 
-func SendPushReq(s string, client *http.Client, c *model.Conf) (*model.Clipboard, error) {
+func SendPushReq(s string, client *http.Client, c *model.UContext) (*model.Clipboard, error) {
 	reqBody, clipboardInstance, err := GenClipboardReqBody(s)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func SendPushReq(s string, client *http.Client, c *model.Conf) (*model.Clipboard
 	return clipboardInstance, nil
 }
 
-func SendPullReq(client *http.Client, c *model.Conf) ([]byte, error) {
+func SendPullReq(client *http.Client, c *model.UContext) ([]byte, error) {
 	pullApi := model.UrlPullApi(c)
 	resp, err := client.Get(pullApi)
 	if err != nil {
@@ -68,18 +68,18 @@ func SendPullReq(client *http.Client, c *model.Conf) ([]byte, error) {
 	return body, err
 }
 
-func NewUClipboardHttpClient(c *model.Conf) *http.Client {
-	if c.Client.Timeout == 0 {
+func NewUClipboardHttpClient(c *model.UContext) *http.Client {
+	if c.Client.Connect.Timeout == 0 {
 		return &http.Client{}
 	}
 
-	client := &http.Client{Timeout: time.Duration(c.Client.Timeout) * time.Millisecond}
+	client := &http.Client{Timeout: time.Duration(c.Client.Connect.Timeout) * time.Millisecond}
 	return client
 }
 
 // if this clipboard content is a binary file, return the download url,
 // else return the raw content itself
-func DetectAndConcatFileUrl(conf *model.Conf, clipboard *model.Clipboard) string {
+func DetectAndConcatFileUrl(conf *model.UContext, clipboard *model.Clipboard) string {
 	content := clipboard.Content
 	if clipboard.ContentType == "binary" {
 		content = model.UrlDownloadApi(conf, content)

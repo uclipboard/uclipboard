@@ -50,7 +50,7 @@ func ginLoggerMiddleware() gin.HandlerFunc {
 	}
 }
 
-func ginAuthMiddleware(conf *model.Conf) gin.HandlerFunc {
+func ginAuthMiddleware(uctx *model.UContext) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.Query("token")
 		if token == "" {
@@ -58,7 +58,7 @@ func ginAuthMiddleware(conf *model.Conf) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		if token != conf.Runtime.TokenEncrypt {
+		if token != uctx.Runtime.TokenEncrypt {
 			c.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("token is incorrect", nil))
 			c.Abort()
 			return
@@ -67,9 +67,9 @@ func ginAuthMiddleware(conf *model.Conf) gin.HandlerFunc {
 	}
 }
 
-func cacheMiddleware(conf *model.Conf) gin.HandlerFunc {
+func cacheMiddleware(conf *model.UContext) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", conf.Server.CacheMaxAge)) // 30 days
+		c.Writer.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", conf.Server.Api.CacheMaxAge)) // 30 days
 		c.Next()
 
 	}
@@ -82,7 +82,7 @@ func removeCacheMiddleware() gin.HandlerFunc {
 	}
 }
 
-func Run(c *model.Conf) {
+func Run(c *model.UContext) {
 	logger := model.NewModuleLogger("http")
 	core.InitDB(c)
 	frontend.InitFrontend()
@@ -146,8 +146,8 @@ func Run(c *model.Conf) {
 
 		publicV0.GET(model.ApiPublicShare, HandlerPublicShare(c))
 	}
-	logger.Infof("Server is running on :%d", c.Server.Port)
-	if err := r.Run(":" + strconv.Itoa(c.Server.Port)); err != nil {
+	logger.Infof("Server is running on :%d", c.Server.Api.Port)
+	if err := r.Run(":" + strconv.Itoa(c.Server.Api.Port)); err != nil {
 		logger.Fatalf("Server run error: %v", err)
 	}
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/uclipboard/uclipboard/server/core"
 )
 
-func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {
+func HandlerPush(uctx *model.UContext) func(ctx *gin.Context) {
 	logger := model.NewModuleLogger("HandlerPush")
 
 	return func(ctx *gin.Context) {
@@ -27,8 +27,8 @@ func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {
 			return
 		}
 
-		if len(clipboardData.Content) > conf.MaxClipboardSize {
-			ctx.JSON(http.StatusRequestEntityTooLarge, model.NewDefaultServeRes(fmt.Sprintf("clipboard is too large[limit: %dB]", conf.MaxClipboardSize), nil))
+		if len(clipboardData.Content) > uctx.ContentLengthLimit {
+			ctx.JSON(http.StatusRequestEntityTooLarge, model.NewDefaultServeRes(fmt.Sprintf("clipboard is too large[limit: %dB]", uctx.ContentLengthLimit), nil))
 			return
 		}
 		if clipboardData.Content == "" {
@@ -43,11 +43,11 @@ func HandlerPush(conf *model.Conf) func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("", nil))
 	}
 }
-func HandlerPull(conf *model.Conf) func(ctx *gin.Context) {
+func HandlerPull(conf *model.UContext) func(ctx *gin.Context) {
 	logger := model.NewModuleLogger("HandlerPull")
 
 	return func(ctx *gin.Context) {
-		clipboardArr, err := core.QueryLatestClipboardRecord(conf.Server.PullHistorySize)
+		clipboardArr, err := core.QueryLatestClipboardRecord(conf.Server.Api.PullSize)
 		if err != nil {
 			logger.Debugf("GetLatestClipboardRecord error: %v", err)
 			ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes("get latest clipboard record error", nil))
@@ -64,7 +64,7 @@ func HandlerPull(conf *model.Conf) func(ctx *gin.Context) {
 	}
 }
 
-func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
+func HandlerUpload(conf *model.UContext) func(ctx *gin.Context) {
 	logger := model.NewModuleLogger("HandlerUpload")
 	return func(ctx *gin.Context) {
 		file, err := ctx.FormFile("file")
@@ -73,7 +73,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 			return
 		}
 		lifetime := ctx.Query("lifetime")
-		lifetimeSecs, err := core.ConvertLifetime(lifetime, conf.Server.DefaultFileLife)
+		lifetimeSecs, err := core.ConvertLifetime(lifetime, conf.Server.Store.DefaultFileLife)
 		if err != nil {
 			logger.Debugf("ConvertLifetime error: %v", err)
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("invalid lifetime", nil))
@@ -100,7 +100,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 		logger.Debugf("Upload file metadata is: %v", fileMetadata)
 
 		// save file to tmp directory and get the path to save in db
-		filePath := filepath.Join(conf.Server.TmpPath, fileMetadata.TmpPath)
+		filePath := filepath.Join(conf.Server.Store.TmpPath, fileMetadata.TmpPath)
 		logger.Debugf("Save file to: %s", filePath)
 
 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
@@ -146,7 +146,7 @@ func HandlerUpload(conf *model.Conf) func(ctx *gin.Context) {
 	}
 }
 
-func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
+func HandlerDownload(conf *model.UContext) func(ctx *gin.Context) {
 	logger := model.NewModuleLogger("HandlerDownload")
 
 	return func(ctx *gin.Context) {
@@ -199,7 +199,7 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 
 		}
 
-		fullPath := path.Join(conf.Server.TmpPath, metadata.TmpPath)
+		fullPath := path.Join(conf.Server.Store.TmpPath, metadata.TmpPath)
 		logger.Debugf("Required file full path: %s", fullPath)
 		// set file name in header
 		ctx.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, metadata.FileName))
@@ -207,7 +207,7 @@ func HandlerDownload(conf *model.Conf) func(ctx *gin.Context) {
 	}
 }
 
-func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
+func HandlerHistory(c *model.UContext) func(ctx *gin.Context) {
 	logger := model.NewModuleLogger("HandlerHistory")
 	return func(ctx *gin.Context) {
 		logger.Trace("into HeadlerHistory")
@@ -222,7 +222,7 @@ func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
 		}
 		logger.Debugf("Request clipboard history page: %v", pageInt)
 		clipboardsCount, err := core.CountClipboardHistory(c)
-		historyPageCount := math.Ceil(float64(clipboardsCount) / float64(c.Server.ClipboardHistoryPageSize))
+		historyPageCount := math.Ceil(float64(clipboardsCount) / float64(c.Server.Api.HistoryPageSize))
 
 		if err != nil {
 			logger.Debugf("CountClipboardHistory error: %v", err)
@@ -248,7 +248,7 @@ func HandlerHistory(c *model.Conf) func(ctx *gin.Context) {
 	}
 }
 
-func HandlerPublicShare(c *model.Conf) func(ctx *gin.Context) {
+func HandlerPublicShare(c *model.UContext) func(ctx *gin.Context) {
 	// TODO share binary file to public
 	return func(ctx *gin.Context) {
 	}

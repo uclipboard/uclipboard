@@ -10,7 +10,7 @@ import (
 )
 
 type loopContenxt struct {
-	conf                 *model.Conf
+	uctx                 *model.UContext
 	client               *http.Client
 	adapter              adapter.ClipboardCmdAdapter
 	logger               *logrus.Entry
@@ -23,7 +23,7 @@ func (ctx *loopContenxt) stagePull() ([]byte, bool) {
 	logger := ctx.logger
 	logger.Trace("into loopPullStage")
 
-	body, pullErr := SendPullReq(ctx.client, ctx.conf)
+	body, pullErr := SendPullReq(ctx.client, ctx.uctx)
 	if pullErr != nil {
 		if pullErr == ErrUnexpectRespStatus {
 			logger.Tracef("the response body when received unexpected response status occured: %q", string(body))
@@ -47,7 +47,7 @@ func (ctx *loopContenxt) stagePull() ([]byte, bool) {
 			// it looks like that close idle connections is enough,
 			// but maybe it is better to recreate a new client
 			logger.Debug("create a new client")
-			ctx.client = NewUClipboardHttpClient(ctx.conf)
+			ctx.client = NewUClipboardHttpClient(ctx.uctx)
 
 			if ctx.dynamicSleepTime <= 60*time.Second {
 				ctx.dynamicSleepTime *= 2
@@ -60,16 +60,16 @@ func (ctx *loopContenxt) stagePull() ([]byte, bool) {
 		return nil, false
 	}
 
-	if ctx.dynamicSleepTime != time.Duration(ctx.conf.Client.Interval)*time.Millisecond {
+	if ctx.dynamicSleepTime != time.Duration(ctx.uctx.Client.Adapter.Interval)*time.Millisecond {
 		ctx.logger.Debug("reset sleep time because the connection is activated.")
-		ctx.dynamicSleepTime = time.Duration(ctx.conf.Client.Interval) * time.Millisecond
+		ctx.dynamicSleepTime = time.Duration(ctx.uctx.Client.Adapter.Interval) * time.Millisecond
 	}
 
 	return body, true
 }
 
 func (ctx *loopContenxt) stageCopy(currentClipboard *model.Clipboard) bool {
-	s := DetectAndConcatFileUrl(ctx.conf, currentClipboard)
+	s := DetectAndConcatFileUrl(ctx.uctx, currentClipboard)
 	ctx.logger.Tracef("copy modify: %q => %q", currentClipboard.Content, s)
 	E := ctx.adapter.Copy(s)
 	if E != nil {
@@ -132,7 +132,7 @@ func (ctx *loopContenxt) stagePaste() (string, bool) {
 		return "", false
 	}
 
-	if len(currentClipboard) > ctx.conf.MaxClipboardSize {
+	if len(currentClipboard) > ctx.uctx.ContentLengthLimit {
 		ctx.logger.Debug("current clipboard size is too large, skip push")
 		return "", false
 	}
@@ -145,7 +145,7 @@ func (ctx *loopContenxt) stageLocalDecision(currentClipboard string) (doPush boo
 	ctx.logger.Tracef("previousClipboard.Content %s[%v]\n", ctx.previousClipboard.Content, []byte(ctx.previousClipboard.Content))
 	ctx.logger.Tracef("currentClipboard %s[%v]\n", currentClipboard, []byte(currentClipboard))
 	if ctx.previousClipboard.Content != currentClipboard {
-		clipboardContentIfIsFile := DetectAndConcatFileUrl(ctx.conf, &ctx.previousClipboard)
+		clipboardContentIfIsFile := DetectAndConcatFileUrl(ctx.uctx, &ctx.previousClipboard)
 		if currentClipboard == clipboardContentIfIsFile {
 			return false
 		}
@@ -158,7 +158,7 @@ func (ctx *loopContenxt) stagePush(currentClipboard string) bool {
 	ctx.logger.Debugf("(PUSH =>) %s", currentClipboard)
 	var wrappedCLipboard *model.Clipboard
 	var err error
-	if wrappedCLipboard, err = SendPushReq(currentClipboard, ctx.client, ctx.conf); err != nil {
+	if wrappedCLipboard, err = SendPushReq(currentClipboard, ctx.client, ctx.uctx); err != nil {
 		ctx.logger.Warnf("send push request error: %v", err)
 		return false
 	}
@@ -166,14 +166,14 @@ func (ctx *loopContenxt) stagePush(currentClipboard string) bool {
 	return true
 }
 
-func mainLoop(conf *model.Conf, theAdapter adapter.ClipboardCmdAdapter, client *http.Client) {
+func mainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, client *http.Client) {
 	logger := model.NewModuleLogger("loop")
 	logger.Tracef("into mainLoop")
 
-	dynamicSleepTime := time.Duration(conf.Client.Interval) * time.Millisecond
+	dynamicSleepTime := time.Duration(conf.Client.Adapter.Interval) * time.Millisecond
 	logger.Debugf("default sleep time: %v", dynamicSleepTime)
 	ctx := loopContenxt{
-		conf:             conf,
+		uctx:             conf,
 		client:           client,
 		adapter:          theAdapter,
 		logger:           logger,

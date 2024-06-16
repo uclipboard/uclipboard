@@ -7,15 +7,15 @@ import (
 	"github.com/uclipboard/uclipboard/server/core"
 )
 
-func TimerGC(conf *model.Conf) {
+func TimerGC(uctx *model.UContext) {
 	logger := model.NewModuleLogger("timer")
-	logger.Infof("TimerGC started, interval: %ds", conf.Server.TimerInterval)
-	interval := time.Duration(conf.Server.TimerInterval) * time.Second
+	logger.Infof("TimerGC started, interval: %ds", uctx.Server.TimerInterval)
+	interval := time.Duration(uctx.Server.TimerInterval) * time.Second
 	for {
 		// Get the current time
 		now := time.Now().UnixMilli()
 		// Query the database for expired files
-		expiredFiles, err := core.QueryExpiredFiles(conf, now)
+		expiredFiles, err := core.QueryExpiredFiles(uctx, now)
 		if err != nil {
 			logger.Warnf("Query expired files failed: %v", err)
 			continue
@@ -30,7 +30,7 @@ func TimerGC(conf *model.Conf) {
 				logger.Warnf("Delete expired file metadata record failed: %v", err)
 			}
 
-			err := core.DelTmpFile(conf, &file)
+			err := core.DelTmpFile(uctx, &file)
 			if err != nil {
 				logger.Warnf("Delete expired file failed: %v", err)
 			}
@@ -40,6 +40,16 @@ func TimerGC(conf *model.Conf) {
 		} else {
 			logger.Debugf("Expired files count: %d", len(expiredFiles))
 		}
+		// delete outdated clipboard records
+		if uctx.Server.Store.MaxClipboardRecordNumber == 0 {
+			logger.Debugf("MaxClipboardRecordNumber is 0, skip delete outdated clipboard records")
+		} else {
+			err = core.DeleteOutdatedClipboard(uctx)
+			if err != nil {
+				logger.Warnf("Delete outdated clipboard records failed: %v", err)
+			}
+		}
+
 		time.Sleep(interval)
 	}
 }

@@ -8,7 +8,7 @@ import (
 
 var logger = logrus.New()
 
-func InitLogger(c *Conf) {
+func InitLogger(c *UContext) {
 	logger.SetFormatter(&logrus.TextFormatter{})
 	if c.Runtime.LogPath != "" {
 		file, err := os.OpenFile(c.Runtime.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
