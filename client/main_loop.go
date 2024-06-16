@@ -60,9 +60,9 @@ func (ctx *loopContenxt) stagePull() ([]byte, bool) {
 		return nil, false
 	}
 
-	if ctx.dynamicSleepTime != time.Duration(ctx.uctx.Client.Adapter.Interval)*time.Millisecond {
+	if ctx.dynamicSleepTime != time.Duration(ctx.uctx.Client.Connect.Interval)*time.Millisecond {
 		ctx.logger.Debug("reset sleep time because the connection is activated.")
-		ctx.dynamicSleepTime = time.Duration(ctx.uctx.Client.Adapter.Interval) * time.Millisecond
+		ctx.dynamicSleepTime = time.Duration(ctx.uctx.Client.Connect.Interval) * time.Millisecond
 	}
 
 	return body, true
@@ -170,7 +170,7 @@ func mainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, clie
 	logger := model.NewModuleLogger("loop")
 	logger.Tracef("into mainLoop")
 
-	dynamicSleepTime := time.Duration(conf.Client.Adapter.Interval) * time.Millisecond
+	dynamicSleepTime := time.Duration(conf.Client.Connect.Interval) * time.Millisecond
 	logger.Debugf("default sleep time: %v", dynamicSleepTime)
 	ctx := loopContenxt{
 		uctx:             conf,

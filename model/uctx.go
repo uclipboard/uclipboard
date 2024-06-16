@@ -15,14 +15,14 @@ type UContext struct {
 	ContentLengthLimit int    `toml:"content_length_limit"`
 	Client             struct {
 		Connect struct {
-			Method  string `toml:"method"`
-			Timeout int64  `toml:"timeout"`
-			Url     string `toml:"url"`
+			Method   string `toml:"method"`
+			Interval int    `toml:"interval"`
+			Url      string `toml:"url"`
+			Timeout  int    `toml:"timeout"`
 		} `toml:"connect"`
 
 		Adapter struct {
 			Method     string `toml:"method"`
-			Interval   int    `toml:"interval"`
 			XSelection string `toml:"X_selection"`
 		} `toml:"adapter"`
 	} `toml:"client"`
@@ -74,10 +74,11 @@ func NewUCtxWithDefault() *UContext {
 
 	c.ContentLengthLimit = 1024 * 50 // 50KB
 
-	c.Client.Adapter.Interval = 1000
-	c.Client.Adapter.XSelection = "clipboard"
+	c.Client.Connect.Interval = 1000
 	c.Client.Connect.Method = "polling"
 	c.Client.Connect.Timeout = 10000
+
+	c.Client.Adapter.XSelection = "clipboard"
 
 	c.Server.TimerInterval = 60
 	c.Server.Store.DBPath = "./uclipboard.db"
