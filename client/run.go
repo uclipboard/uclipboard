@@ -12,7 +12,7 @@ import (
 func Run(c *model.UContext) {
 	var clipboardAdapter adapter.ClipboardCmdAdapter
 	logger := model.NewModuleLogger("client")
-	switch c.Client.Adapter.Method {
+	switch c.Client.Adapter.Type {
 	case "wl":
 		clipboardAdapter = adapter.NewWl()
 	case "xc":

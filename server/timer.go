@@ -12,6 +12,8 @@ func TimerGC(uctx *model.UContext) {
 	logger.Infof("TimerGC started, interval: %ds", uctx.Server.TimerInterval)
 	interval := time.Duration(uctx.Server.TimerInterval) * time.Second
 	for {
+		time.Sleep(interval)
+
 		// Get the current time
 		now := time.Now().UnixMilli()
 		// Query the database for expired files
@@ -28,18 +30,22 @@ func TimerGC(uctx *model.UContext) {
 			err = core.DelFileMetadataRecordById(&file)
 			if err != nil {
 				logger.Warnf("Delete expired file metadata record failed: %v", err)
+				continue
 			}
 
 			err := core.DelTmpFile(uctx, &file)
 			if err != nil {
 				logger.Warnf("Delete expired file failed: %v", err)
+				continue
 			}
 		}
+		
 		if len(expiredFiles) == 0 {
 			logger.Debugf("No expired files")
 		} else {
 			logger.Debugf("Expired files count: %d", len(expiredFiles))
 		}
+
 		// delete outdated clipboard records
 		if uctx.Server.Store.MaxClipboardRecordNumber == 0 {
 			logger.Debugf("MaxClipboardRecordNumber is 0, skip delete outdated clipboard records")
@@ -50,6 +56,5 @@ func TimerGC(uctx *model.UContext) {
 			}
 		}
 
-		time.Sleep(interval)
 	}
 }
