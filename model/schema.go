@@ -8,7 +8,7 @@ import (
 )
 
 type Clipboard struct {
-	Id          int64  `json:"-" db:"id"`
+	Id          int64  `json:"id" db:"id"`
 	Ts          int64  `json:"ts" db:"ts"` //ms timestamp
 	Content     string `json:"content" db:"content"`
 	Hostname    string `json:"hostname" db:"hostname"`         // sender
