@@ -69,10 +69,10 @@ func SendPullReq(client *http.Client, c *model.UContext) ([]byte, error) {
 }
 
 func NewUClipboardHttpClient(c *model.UContext) *http.Client {
-	if c.Client.Connect.Timeout == 0 {
-		return &http.Client{}
+	if c.Runtime.Mode == "instant" {
+		return &http.Client{Timeout: time.Duration(c.Client.Connect.UploadTimeout) * time.Second}
 	}
-
+	// else
 	client := &http.Client{Timeout: time.Duration(c.Client.Connect.Timeout) * time.Millisecond}
 	return client
 }

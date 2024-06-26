@@ -15,10 +15,11 @@ type UContext struct {
 	ContentLengthLimit int    `toml:"content_length_limit"`
 	Client             struct {
 		Connect struct {
-			Type     string `toml:"type"`
-			Interval int    `toml:"interval"`
-			Url      string `toml:"url"`
-			Timeout  int    `toml:"timeout"`
+			Type          string `toml:"type"`
+			Interval      int    `toml:"interval"`
+			Url           string `toml:"url"`
+			Timeout       int    `toml:"timeout"`
+			UploadTimeout int    `toml:"upload_timeout"`
 		} `toml:"connect"`
 
 		Adapter struct {
@@ -77,7 +78,7 @@ func NewUCtxWithDefault() *UContext {
 	c.Client.Connect.Interval = 1000
 	c.Client.Connect.Type = "polling"
 	c.Client.Connect.Timeout = 10000
-
+	c.Client.Connect.UploadTimeout = 300
 	c.Client.Adapter.XSelection = "clipboard"
 
 	c.Server.TimerInterval = 60
