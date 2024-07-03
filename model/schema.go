@@ -34,7 +34,12 @@ func NewFullClipoard(c string) *Clipboard {
 }
 
 func CmpClipboard(a *Clipboard, b *Clipboard) bool {
-	return reflect.DeepEqual(a, b)
+	// ignore id comparison
+	prevId := a.Id
+	a.Id = b.Id
+	result := reflect.DeepEqual(a, b)
+	a.Id = prevId
+	return result
 }
 func IndexClipboardArray(arr []Clipboard, item *Clipboard) int {
 	for index, arrItem := range arr {
