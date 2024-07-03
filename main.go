@@ -41,7 +41,7 @@ func main() {
 	if err != nil {
 		logger.Fatalf("can't marshal config: %v", err)
 	}
-	logger.Debugf("config: %s", string(confBytes))
+	logger.Debugf("initial context: %s", string(confBytes))
 
 	switch conf.Runtime.Mode {
 	case "server":

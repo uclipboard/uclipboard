@@ -70,7 +70,7 @@ func (ctx *loopContenxt) stagePull() ([]byte, bool) {
 
 func (ctx *loopContenxt) stageCopy(currentClipboard *model.Clipboard) bool {
 	s := DetectAndConcatFileUrl(ctx.uctx, currentClipboard)
-	ctx.logger.Tracef("copy modify: %q => %q", currentClipboard.Content, s)
+	ctx.logger.Tracef("(MOD |V|) %s => %s", currentClipboard.Content, s)
 	E := ctx.adapter.Copy(s)
 	if E != nil {
 		ctx.logger.Warnf("adapter.Copy error: %v", E)
@@ -84,9 +84,9 @@ func (ctx *loopContenxt) stageCopy(currentClipboard *model.Clipboard) bool {
 // others: previous clipboard is updated, should update the system clipboard
 func (ctx *loopContenxt) stageRemoteDecision(remoteClipboards []model.Clipboard) int {
 	previousClipboardHistoryidx := model.IndexClipboardArray(remoteClipboards, &ctx.previousClipboard)
-
+	ctx.logger.Tracef("previousClipboard: %v", ctx.previousClipboard)
 	if previousClipboardHistoryidx == -1 {
-		ctx.logger.Debug("update previousClipboard")
+		ctx.logger.Debug("update previousClipboard as a new client")
 		ctx.previousClipboard = remoteClipboards[0]
 		return -1
 
@@ -95,13 +95,13 @@ func (ctx *loopContenxt) stageRemoteDecision(remoteClipboards []model.Clipboard)
 		ctx.previousClipboard = remoteClipboards[0]
 		return 1
 	}
-	ctx.logger.Tracef("previousClipboard.Content: %s", ctx.previousClipboard.Content)
 
 	// else: previousClipboardHistoryidx == 0, detect whether the current clipboard is updated.
 	return 0
 }
 
 func (ctx *loopContenxt) stagePaste() (string, bool) {
+	ctx.logger.Trace("into stagePaste")
 	currentClipboard, E := ctx.adapter.Paste()
 	if E != nil {
 		if E == adapter.ErrEmptyClipboard {
@@ -140,13 +140,13 @@ func (ctx *loopContenxt) stagePaste() (string, bool) {
 	return currentClipboard, true
 }
 
-func (ctx *loopContenxt) stageLocalDecision(currentClipboard string) (doPush bool) {
-
-	ctx.logger.Tracef("previousClipboard.Content %s[%v]\n", ctx.previousClipboard.Content, []byte(ctx.previousClipboard.Content))
-	ctx.logger.Tracef("currentClipboard %s[%v]\n", currentClipboard, []byte(currentClipboard))
-	if ctx.previousClipboard.Content != currentClipboard {
+func (ctx *loopContenxt) stageLocalDecision(currentClipboardContent string) (doPush bool) {
+	ctx.logger.Trace("into stageLocalDecision")
+	ctx.logger.Tracef("previousClipboard.Content %q[%v]\n", ctx.previousClipboard.Content, []byte(ctx.previousClipboard.Content))
+	ctx.logger.Tracef("currentClipboard %q[%v]\n", currentClipboardContent, []byte(currentClipboardContent))
+	if ctx.previousClipboard.Content != currentClipboardContent {
 		clipboardContentIfIsFile := DetectAndConcatFileUrl(ctx.uctx, &ctx.previousClipboard)
-		if currentClipboard == clipboardContentIfIsFile {
+		if currentClipboardContent == clipboardContentIfIsFile {
 			return false
 		}
 		return true
@@ -189,10 +189,10 @@ func mainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, clie
 			continue
 		}
 
-		logger.Tracef("current response body: %q", string(body))
+		logger.Tracef("current response body: %s", string(body))
 		remoteClipboards, err := ParsePullData(body)
 		if err != nil {
-			logger.Warnf("error parsing response body: %s", err)
+			logger.Warnf("error parsing response body: %v", err)
 			continue
 		}
 		logger.Tracef("remoteClipboards: %v", remoteClipboards)

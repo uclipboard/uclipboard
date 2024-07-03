@@ -137,7 +137,7 @@ func ParseTimeStr(t string) int64 {
 
 }
 func FormatConf(uctx *UContext) *UContext {
-	logger := NewModuleLogger("config_formatter")
+	// logger := NewModuleLogger("config_formatter")
 	// delete the last '/' of server url
 	if len(uctx.Client.Connect.Url) > 0 && uctx.Client.Connect.Url[len(uctx.Client.Connect.Url)-1] == '/' {
 		uctx.Client.Connect.Url = uctx.Client.Connect.Url[:len(uctx.Client.Connect.Url)-1]
@@ -145,7 +145,7 @@ func FormatConf(uctx *UContext) *UContext {
 
 	lifetimeInt := ParseTimeStr(uctx.Runtime.UploadFileLifetimeStr)
 	uctx.Runtime.UploadFileLifetime = lifetimeInt
-	logger.Debugf("parsed lifetime: %d", lifetimeInt)
+	// logger.Debugf("default file lifetime: %d", lifetimeInt)
 	uctx.Runtime.TokenEncrypt = TokenEncrypt(uctx.Token)
 	return uctx
 }
