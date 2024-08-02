@@ -8,6 +8,7 @@ type ClipboardCmdAdapter interface {
 }
 
 var (
-	ErrEmptyClipboard  = errors.New("perhaps system clipboard is empty")
-	ErrLockedClipboard = errors.New("perhaps system clipboard is locked so that adapter can't access it")
+	ErrEmptyClipboard           = errors.New("perhaps system clipboard is empty")
+	ErrLockedClipboard          = errors.New("perhaps system clipboard is locked so that adapter can't access it")
+	ErrClipboardDataTypeUnknown = errors.New("the content type of clipboard is unrecognized")
 )

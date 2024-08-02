@@ -115,6 +115,9 @@ func (ctx *loopContenxt) stagePaste() (string, bool) {
 				ctx.logger.Debugf("clipboard is locked, skip push, but the warning counter has reached the maximum value: %v", ctx.lockedWarningCounter)
 			}
 			return "", false
+		} else if E == adapter.ErrClipboardDataTypeUnknown {
+			ctx.logger.Debugf("the content type of clipboard is unrecgnized.")
+			currentClipboard = ""
 		} else {
 			ctx.logger.Warnf("adapter.Paste error:%v", E)
 			return "", false

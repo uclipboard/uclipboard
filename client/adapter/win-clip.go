@@ -8,7 +8,11 @@ import (
 	"strings"
 )
 
-const ErrCodeAccessDenied = 5
+const (
+	ErrCodeAccessDenied             = 5
+	ErrCodeClipboardEmpty           = -2
+	ErrCodeClipboardDataTypeUnknown = -3
+)
 
 type WinClip struct {
 }
@@ -43,14 +47,16 @@ func (WC *WinClip) Paste() (string, error) {
 	if err != nil {
 		stdErrStr := stdErr.String()
 		errCode, errString := parseStdErr(stdErrStr)
-
-		if strings.Contains(errString, "Clipboard is empty") {
+		switch errCode {
+		case ErrCodeClipboardEmpty:
 			return "", ErrEmptyClipboard
-		} else if errCode == ErrCodeAccessDenied {
+		case ErrCodeAccessDenied:
 			return "", ErrLockedClipboard
+		case ErrCodeClipboardDataTypeUnknown:
+			return "", ErrClipboardDataTypeUnknown
+		default:
+			return "", errors.New(errString)
 		}
-		// else
-		return "", errors.New(errString)
 	}
 	outStr := stdOut.String()
 	outStr = strings.ReplaceAll(outStr, "\r\n", "\n")
