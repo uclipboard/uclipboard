@@ -55,7 +55,11 @@ func (WC *WinClip) Paste() (string, error) {
 		case ErrCodeClipboardDataTypeUnknown:
 			return "", ErrClipboardDataTypeUnknown
 		default:
-			return "", errors.New(errString)
+			if errString != "" {
+				return "", errors.New(errString)
+			} else {
+				return "", err
+			}
 		}
 	}
 	outStr := stdOut.String()
