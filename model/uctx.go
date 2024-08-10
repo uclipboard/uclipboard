@@ -44,6 +44,7 @@ type UContext struct {
 		} `toml:"store"`
 
 		TimerInterval int `toml:"timer_interval"`
+		AccessLog bool `toml:"access_log"`
 	} `toml:"server"`
 	// All struct should be read-only except runtime after LoadConf
 	Runtime struct {
@@ -82,6 +83,8 @@ func NewUCtxWithDefault() *UContext {
 	c.Client.Adapter.XSelection = "clipboard"
 
 	c.Server.TimerInterval = 60
+	c.Server.AccessLog = false
+	
 	c.Server.Store.DBPath = "./uclipboard.db"
 	c.Server.Store.TmpPath = "./tmp/"
 	c.Server.Store.DefaultFileLife = 60 * 5 //s 3m

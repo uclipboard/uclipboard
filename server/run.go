@@ -101,7 +101,11 @@ func Run(c *model.UContext) {
 	}
 
 	r := gin.New()
-	r.Use(ginLoggerMiddleware())
+	
+	if c.Server.AccessLog {
+		r.Use(ginLoggerMiddleware())
+	}
+
 	if strings.Contains(c.Runtime.Test, "c") {
 		logger.Warn("Allow all cors request")
 		corsConfig := cors.DefaultConfig()

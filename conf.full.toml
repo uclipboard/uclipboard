@@ -7,12 +7,14 @@ type = "polling" #todo, specify connect mode in the fulture
 interval = 1000 #ms, the interval time in polling mode
 timeout = 10000 #ms, the timeout of http client in polling mode if 0, uclipboard will create a default (wait forever) client
 upload_timeout = 300 #s, the timeout of http client in uploading file
+
 [client.adapter]
 type = "" #necessary, specify the adapter method, e.g. "xc" for xclip, "wc" for win-clip
 X_selection = "clipboard" # select the clipboard which you want to copy/paste in xc adapter
 
 [server]
 timer_interval = 60 #seconds, the interval of rubbish cleaner timer
+access_log = false #print access log
 
 [server.store]
 db_path = "./uclipboard.db" 
