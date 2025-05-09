@@ -38,7 +38,7 @@ docker-image: bin
 build-target-noweb: 
 	@mkdir -p $(BUILD_DIR)
 	@echo "building $(TARGET) without any optimization"
-	@GOOS=linux GOARCH=amd64 $(TMP_BUILD_CMD)
+	@GOOS=$(GOOS) GOARCH=$(GOARCH) $(TMP_BUILD_CMD)
 	@echo "building completed"
 
 $(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html

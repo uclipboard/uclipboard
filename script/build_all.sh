@@ -6,7 +6,7 @@ if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
 fi
 
 # "darwin/amd64" "darwin/arm64" are not supported by uclipboard
-GOOSARCHS=("linux/amd64" "linux/arm64" "windows/amd64" "windows/386")
+GOOSARCHS=("linux/amd64" "linux/arm64" "windows/amd64" "windows/386" "darwin/amd64" "darwin/arm64")
 
 build_dir=$1
 name=$2
