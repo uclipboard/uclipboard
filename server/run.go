@@ -133,6 +133,7 @@ func Run(c *model.UContext) {
 	api.Use(removeCacheMiddleware())
 	{
 		v0 := api.Group(model.ApiVersion)
+		v1 := api.Group(model.ApiVersion1)
 
 		if !strings.Contains(c.Runtime.Test, "t") {
 			logger.Debugf("Token is `%s` and server will use it", c.Runtime.TokenEncrypt)
@@ -147,6 +148,7 @@ func Run(c *model.UContext) {
 		v0.POST(model.Api_Upload, HandlerUpload(c))
 		v0.GET(model.Api_Download, HandlerDownload(c))
 
+		v1.GET(model.Api_WS, HandlerWebSocket(c))
 	}
 	logger.Infof("Server is running on :%d", c.Server.Api.Port)
 	if err := r.Run(":" + strconv.Itoa(c.Server.Api.Port)); err != nil {
