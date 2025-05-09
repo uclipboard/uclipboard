@@ -42,7 +42,7 @@ build-server(){
 
 dev-server(){
 while true; do
-		make run-server-nosync YARN="$YARN" LOG_LEVEL="$LOG_LEVEL" OTHER_ARGS="$OTHER_ARGS"&
+		make run-server-noweb YARN="$YARN" LOG_LEVEL="$LOG_LEVEL" OTHER_ARGS="$OTHER_ARGS"&
 		inotifywait -e close_write,moved_to,create $WATCH_SRCS
 		echo "##killing server##"
 		ps aux|grep -v grep|grep "make run-server"|awk '{print $2}' |xargs kill
@@ -52,7 +52,7 @@ while true; do
 
 dev-client(){
 	while true; do
-		make run-client-nosync YARN="$YARN" LOG_LEVEL="$LOG_LEVEL" OTHER_ARGS="$OTHER_ARGS" &
+		make run-client-noweb YARN="$YARN" LOG_LEVEL="$LOG_LEVEL" OTHER_ARGS="$OTHER_ARGS" &
 		inotifywait -e close_write,moved_to,create $TARGET_FULL_PATH
 		echo "##killing client##"
 		ps aux|grep -v grep|grep "make run-client"|awk '{print $2}' |xargs kill

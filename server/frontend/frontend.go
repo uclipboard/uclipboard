@@ -29,7 +29,7 @@ func InitFrontend() {
 		logger.Fatal("sub dist error")
 		return
 	}
-	logger.Info("frontend init success")
+	logger.Info("frontend init completed")
 }
 
 func AssetsFS() http.FileSystem {

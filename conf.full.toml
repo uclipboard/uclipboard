@@ -27,3 +27,4 @@ pull_size = 5 # the number of clipboard records to pull per request
 history_page_size = 20 # the number of clipboard records per page in history api
 port = 4533 
 cache_max_age = 2592000 #seconds, 30 days in default the max age of cache
+ping_interval = 5000 #ms, the interval time of ping in websocket mode

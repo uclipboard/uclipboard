@@ -39,7 +39,7 @@ func TimerGC(uctx *model.UContext) {
 				continue
 			}
 		}
-		
+
 		if len(expiredFiles) == 0 {
 			logger.Debugf("No expired files")
 		} else {

@@ -29,10 +29,10 @@ func main() {
 	}
 	// before InitLogger, we can't use logger
 	model.InitLogger(conf)
-	// modify config struct by conf file
-	conf = model.LoadConf(conf)
-	conf = model.FormatConf(conf)
-	model.CheckConf(conf)
+	// load conf file
+	conf = model.LoadConf(conf, conf.Runtime.ConfPath)
+	conf.Format()
+	conf.Check()
 
 	logger := model.NewModuleLogger("entry")
 

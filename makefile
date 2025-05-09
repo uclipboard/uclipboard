@@ -35,14 +35,14 @@ docker-image: bin
 	@docker build -t djh233/uclipboard:$(VERSION) .
 	@docker build -t djh233/uclipboard:latest .
 
-build-target-nosync: 
+build-target-noweb: 
 	@mkdir -p $(BUILD_DIR)
 	@echo "building $(TARGET) without any optimization"
 	@GOOS=linux GOARCH=amd64 $(TMP_BUILD_CMD)
 	@echo "building completed"
 
 $(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
-	@make build-target-nosync
+	@make build-target-noweb
 
 $(FRONTEND_DIST)/index.html: $(FRONTEND_SRCS) 
 	@echo "building frontend"
@@ -77,15 +77,15 @@ run-server: $(BUILD_DIR)/$(TARGET)
 	@echo "run local server"
 	@cd $(BUILD_DIR) && ./$(TARGET) --mode server --log-level $(LOG_LEVEL) $(OTHER_ARGS)
 
-run-server-nosync: $(SRCS)
-	@make build-target-nosync
+run-server-noweb: $(SRCS)
+	@make build-target-noweb
 	@echo "run local server"
 	@cd $(BUILD_DIR) && ./$(TARGET) --mode server --log-level $(LOG_LEVEL) $(OTHER_ARGS)
 
-run-client-nosync: $(SRCS)
-	@make build-target-nosync
+run-client-noweb: $(SRCS)
+	@make build-target-noweb
 	@echo "run local client"
 	@cd $(BUILD_DIR) && ./$(TARGET) --mode client --log-level $(LOG_LEVEL) $(OTHER_ARGS)
 
 
-.PHONY: clean all run build-frontend run-server build docker-image bin run-watch test dev-frontend build-target-nosync
+.PHONY: clean all run build-frontend run-server build docker-image bin run-watch test dev-frontend build-target-noweb

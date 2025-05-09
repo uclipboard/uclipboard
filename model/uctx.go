@@ -34,6 +34,7 @@ type UContext struct {
 			HistoryPageSize int `toml:"history_page_size"`
 			Port            int `toml:"port"`
 			CacheMaxAge     int `toml:"cache_max_age"`
+			PingInterval    int `toml:"ping_interval"`
 		} `toml:"api"`
 
 		Store struct {
@@ -43,8 +44,8 @@ type UContext struct {
 			MaxClipboardRecordNumber int    `toml:"max_clipboard_record_number"`
 		} `toml:"store"`
 
-		TimerInterval int `toml:"timer_interval"`
-		AccessLog bool `toml:"access_log"`
+		TimerInterval int  `toml:"timer_interval"`
+		AccessLog     bool `toml:"access_log"`
 	} `toml:"server"`
 	// All struct should be read-only except runtime after LoadConf
 	Runtime struct {
@@ -84,7 +85,7 @@ func NewUCtxWithDefault() *UContext {
 
 	c.Server.TimerInterval = 60
 	c.Server.AccessLog = false
-	
+
 	c.Server.Store.DBPath = "./uclipboard.db"
 	c.Server.Store.TmpPath = "./tmp/"
 	c.Server.Store.DefaultFileLife = 60 * 5 //s 3m
@@ -93,21 +94,22 @@ func NewUCtxWithDefault() *UContext {
 	c.Server.Api.Port = 4533
 	c.Server.Api.HistoryPageSize = 20
 	c.Server.Api.CacheMaxAge = 60 * 60 * 24 * 30 // 30 days
+	c.Server.Api.PingInterval = 5000             // ms
 	return &c
 }
 
-func LoadConf(uctx *UContext) *UContext {
+func LoadConf(defaultUctx *UContext, path string) *UContext {
 	logger := NewModuleLogger("config_loader")
-	content, err := os.ReadFile(uctx.Runtime.ConfPath)
+
+	content, err := os.ReadFile(path)
 	if err != nil {
 		logger.Fatalf("Can't load config file: %s", err.Error())
 	}
-	err = toml.Unmarshal(content, uctx)
-	if err != nil {
+
+	if err = toml.Unmarshal(content, defaultUctx); err != nil {
 		logger.Fatalf("Can't parse config file: %s", err.Error())
 	}
-
-	return uctx
+	return defaultUctx
 }
 
 // return secs
@@ -139,8 +141,7 @@ func ParseTimeStr(t string) int64 {
 	return numberNoUnit * unit
 
 }
-func FormatConf(uctx *UContext) *UContext {
-	// logger := NewModuleLogger("config_formatter")
+func (uctx *UContext) Format() {
 	// delete the last '/' of server url
 	if len(uctx.Client.Connect.Url) > 0 && uctx.Client.Connect.Url[len(uctx.Client.Connect.Url)-1] == '/' {
 		uctx.Client.Connect.Url = uctx.Client.Connect.Url[:len(uctx.Client.Connect.Url)-1]
@@ -150,10 +151,9 @@ func FormatConf(uctx *UContext) *UContext {
 	uctx.Runtime.UploadFileLifetime = lifetimeInt
 	// logger.Debugf("default file lifetime: %d", lifetimeInt)
 	uctx.Runtime.TokenEncrypt = TokenEncrypt(uctx.Token)
-	return uctx
 }
 
-func CheckConf(uctx *UContext) {
+func (uctx *UContext) Check() {
 	logger := NewModuleLogger("config_checker")
 	if uctx.Token == "" && !strings.Contains(uctx.Runtime.Test, "t") {
 		logger.Fatal("token is empty, please set token in conf file.")
@@ -161,5 +161,4 @@ func CheckConf(uctx *UContext) {
 	if uctx.Client.Connect.Url == "" && uctx.Runtime.Mode == "client" {
 		logger.Fatal("server url is empty, please set server url in conf file.")
 	}
-
 }
