@@ -75,52 +75,52 @@ var (
 		order by id asc limit ?
 	)`, clipboardTableName, clipboardTableName)
 )
-var logger *logrus.Entry
+var dbLogger *logrus.Entry
 
 func InitDB(c *model.UContext) {
-	logger = model.NewModuleLogger("DB") //InitDB is abosultely the first function to be called in server.Run
+	dbLogger = model.NewModuleLogger("DB") //InitDB is abosultely the first function to be called in server.Run
 	DB = sqlx.MustConnect("sqlite3", c.Server.Store.DBPath)
 	DB.MustExec(clipboardTableSchema)
 	DB.MustExec(fileMetadataSchema)
 	firsftRecordInsetResult := DB.MustExec(addFirstRecordToClipboardTable)
 	N, err := firsftRecordInsetResult.RowsAffected()
 	if err != nil {
-		logger.Fatalf("addFirstRecordToClipboardTable error: %v", err)
+		dbLogger.Fatalf("addFirstRecordToClipboardTable error: %v", err)
 	}
 	if N != 0 {
-		logger.Info("initialize clipboard table.")
+		dbLogger.Info("initialize clipboard table.")
 	}
-	logger.Debug("DB init completed")
+	dbLogger.Debug("DB init completed")
 }
 
 func AddClipboardRecord(c *model.Clipboard) (err error) {
-	logger.Tracef("call AddclipboardRecord(%v)", c)
+	dbLogger.Tracef("call AddclipboardRecord(%v)", c)
 	_, err = DB.NamedExec(insertClipboard, c)
 	return
 }
 
 func QueryLatestClipboardRecord(N int) (clipboards []model.Clipboard, err error) {
-	logger.Tracef("call GetLatestClipboardRecord(%v)", N)
+	dbLogger.Tracef("call GetLatestClipboardRecord(%v)", N)
 	err = DB.Select(&clipboards, fmt.Sprintf(getLatestClipboard, N))
 	return
 }
 
 // find the latest record
 func GetFileMetadataLatestRecord(d *model.FileMetadata) (err error) {
-	logger.Tracef("call GetFileMetadataLatestRecord(%v)", d)
+	dbLogger.Tracef("call GetFileMetadataLatestRecord(%v)", d)
 	err = DB.Get(d, queryFileMetadataLatest)
 	return
 }
 
 // find the latest record by id or name
 func GetFileMetadataRecordByIdOrName(d *model.FileMetadata) (err error) {
-	logger.Tracef("call GetFileMetadataRecordByOrName(%v)", d)
+	dbLogger.Tracef("call GetFileMetadataRecordByOrName(%v)", d)
 	err = DB.Get(d, queryFileMetadataByIdOrName, d.Id, d.FileName)
 	return
 }
 
 func AddFileMetadataRecord(d *model.FileMetadata) (fileId int64, err error) {
-	logger.Tracef("call AddFileMetadataRecord(%v)", d)
+	dbLogger.Tracef("call AddFileMetadataRecord(%v)", d)
 	result, err := DB.NamedExec(insertFileMetadata, d)
 	if err != nil {
 		return
@@ -133,7 +133,7 @@ func AddFileMetadataRecord(d *model.FileMetadata) (fileId int64, err error) {
 }
 
 func DelFileMetadataRecordById(d *model.FileMetadata) (err error) {
-	logger.Tracef("call DelFileMetadataRecordById(%v)", d)
+	dbLogger.Tracef("call DelFileMetadataRecordById(%v)", d)
 	_, err = DB.Exec(deleteFileMetadataById, d.Id)
 	if err != nil {
 		return
@@ -142,7 +142,7 @@ func DelFileMetadataRecordById(d *model.FileMetadata) (err error) {
 }
 
 func DelTmpFile(conf *model.UContext, d *model.FileMetadata) (err error) {
-	logger.Tracef("call DelTmpFile(%v)", d)
+	dbLogger.Tracef("call DelTmpFile(%v)", d)
 	err = os.Remove(path.Join(conf.Server.Store.TmpPath, d.TmpPath))
 	if err != nil {
 		return err
@@ -151,13 +151,13 @@ func DelTmpFile(conf *model.UContext, d *model.FileMetadata) (err error) {
 }
 
 func QueryExpiredFiles(conf *model.UContext, t int64) (expiredFiles []model.FileMetadata, err error) {
-	logger.Tracef("call QueryExpiredFiles(%v)", t)
+	dbLogger.Tracef("call QueryExpiredFiles(%v)", t)
 	err = DB.Select(&expiredFiles, queryFileMetadataByExpireTs, t)
 	return
 }
 
 func QueryClipboardHistory(conf *model.UContext, page int) (clipboards []model.Clipboard, err error) {
-	logger.Tracef("call QueryClipboardHistory(%v)", page)
+	dbLogger.Tracef("call QueryClipboardHistory(%v)", page)
 	err = DB.Select(&clipboards, queryClipboardHistoryWithPage,
 		conf.Server.Api.HistoryPageSize,
 		(page-1)*conf.Server.Api.HistoryPageSize)
@@ -165,13 +165,13 @@ func QueryClipboardHistory(conf *model.UContext, page int) (clipboards []model.C
 }
 
 func CountClipboardHistory(conf *model.UContext) (count int, err error) {
-	logger.Tracef("call CountClipboardHistory()")
+	dbLogger.Tracef("call CountClipboardHistory()")
 	err = DB.Get(&count, queryCountClipboardHistory)
 	return
 }
 
 func DeleteOutdatedClipboard(conf *model.UContext) (err error) {
-	logger.Trace("call DeleteOutdatedClipboard()")
+	dbLogger.Trace("call DeleteOutdatedClipboard()")
 	var count int
 	err = DB.Get(&count, queryCountClipboardHistory)
 	if err != nil {
@@ -179,7 +179,7 @@ func DeleteOutdatedClipboard(conf *model.UContext) (err error) {
 	}
 
 	if count > conf.Server.Store.MaxClipboardRecordNumber {
-		logger.Debugf("delete %d old clipboard records", count-conf.Server.Store.MaxClipboardRecordNumber)
+		dbLogger.Debugf("delete %d old clipboard records", count-conf.Server.Store.MaxClipboardRecordNumber)
 
 		_, err = DB.Exec(deleteOldNClipboard, count-conf.Server.Store.MaxClipboardRecordNumber)
 		if err != nil {

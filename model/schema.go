@@ -25,9 +25,9 @@ func NewFullClipoard(c string) *Clipboard {
 	data := NewClipoardWithDefault()
 	data.Content = c
 	hostname, err := os.Hostname()
-	if err != nil {
-		logger.Warnf("Can't get hostname:%v", err)
-	} else {
+	// if we can't get the hostname,
+	// we just use default content "unknown"
+	if err == nil {
 		data.Hostname = hostname
 	}
 	return data

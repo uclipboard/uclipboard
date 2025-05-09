@@ -1,8 +1,13 @@
 package core
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	"github.com/uclipboard/uclipboard/model"
 )
 
 // lifetime: s unit
@@ -35,4 +40,9 @@ func ExtractFileId(s string, startChar string) int64 {
 		return 0
 	}
 	return idInt64
+}
+
+func ServerInternalErrorLogEcho(ctx *gin.Context, logger *logrus.Entry, msg string, args ...any) {
+	logger.Errorf(msg, args...)
+	ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes(msg, nil))
 }

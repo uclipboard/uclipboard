@@ -6,30 +6,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var logger = logrus.New()
+var baseLogger = logrus.New()
 
 func InitLogger(c *UContext) {
-	logger.SetFormatter(&logrus.TextFormatter{})
+	baseLogger.SetFormatter(&logrus.TextFormatter{})
 	if c.Runtime.LogPath != "" {
 		file, err := os.OpenFile(c.Runtime.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err == nil {
-			logger.SetOutput(file)
+			baseLogger.SetOutput(file)
 		} else {
-			logger.SetOutput(os.Stdout)
-			logger.Warnf("Failed to log to file, using default stdout: %v", err)
+			baseLogger.SetOutput(os.Stdout)
+			baseLogger.Warnf("Failed to log to file, using default stdout: %v", err)
 		}
 	}
 	switch c.Runtime.LogLevel {
 	case "debug":
-		logger.SetLevel(logrus.DebugLevel)
+		baseLogger.SetLevel(logrus.DebugLevel)
 	case "trace":
-		logger.SetLevel(logrus.TraceLevel)
+		baseLogger.SetLevel(logrus.TraceLevel)
 	default:
-		logger.SetLevel(logrus.InfoLevel)
+		baseLogger.SetLevel(logrus.InfoLevel)
 	}
 
 }
 
 func NewModuleLogger(module_name string) *logrus.Entry {
-	return logger.WithField("module", module_name)
+	return baseLogger.WithField("module", module_name)
 }

@@ -51,19 +51,19 @@ func ginLoggerMiddleware() gin.HandlerFunc {
 }
 
 func ginAuthMiddleware(uctx *model.UContext) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		token := c.Query("token")
+	return func(ctx *gin.Context) {
+		token := ctx.Query("token")
 		if token == "" {
-			c.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("unauthorized", nil))
-			c.Abort()
+			ctx.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("unauthorized", nil))
+			ctx.Abort()
 			return
 		}
 		if token != uctx.Runtime.TokenEncrypt {
-			c.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("token is incorrect", nil))
-			c.Abort()
+			ctx.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("token is incorrect", nil))
+			ctx.Abort()
 			return
 		}
-		c.Next()
+		ctx.Next()
 	}
 }
 

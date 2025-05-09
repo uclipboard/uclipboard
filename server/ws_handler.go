@@ -6,7 +6,7 @@ import (
 	"github.com/uclipboard/uclipboard/model"
 )
 
-func HandlerWebSocket(uctx *model.UContext) func(ctx *gin.Context) {
+func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 	logger := model.NewModuleLogger("HandlerWebSocket")
 	return func(ctx *gin.Context) {
 		// default upgrader
