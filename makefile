@@ -7,7 +7,8 @@ GO_LDFLAGS := "-X 'github.com/uclipboard/uclipboard/model.Version=$(VERSION)' -s
 BUILD_DIR := $(PWD)/build
 FRONTEND_DIR := $(PWD)/frontend-repo
 FRONTEND_DIST := $(PWD)/server/frontend/dist
-WATCHER := $(PWD)/watcher.sh
+WATCHER := $(PWD)/script/watcher.sh
+BUILD_ALL := $(PWD)/script/build_all.sh
 
 SRCS := $(shell find $(PWD) -type f -name "*.go")
 FRONTEND_SRCS := $(shell find $(FRONTEND_DIR)/src $(FRONTEND_DIR)/public -type f )
@@ -27,7 +28,7 @@ bin: $(SRCS) $(FRONTEND_DIST)/index.html
 	@echo "uclipboard version: $(VERSION)"
 	@mkdir -p $(BUILD_DIR)
 	@echo "multi-platform compiling..."
-	@bash ./build_all.sh $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
+	@$(BUILD_ALL) $(BUILD_DIR) $(TARGET) $(GO_LDFLAGS)
 
 docker-image: bin
 	@echo "building container"

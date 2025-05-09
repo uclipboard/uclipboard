@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-var seed = time.Now().Unix()
+var seedSrc = rand.NewSource(time.Now().Unix())
+var randGen = rand.New(seedSrc)
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 func RandString(size int) string {
-	randGen := rand.New(rand.NewSource(seed))
 	// Define the characters that can be used in the random string
 
 	// Create a byte slice to hold the random characters

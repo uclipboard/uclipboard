@@ -101,7 +101,7 @@ func Run(c *model.UContext) {
 	}
 
 	r := gin.New()
-	
+
 	if c.Server.AccessLog {
 		r.Use(ginLoggerMiddleware())
 	}
@@ -133,13 +133,12 @@ func Run(c *model.UContext) {
 	api.Use(removeCacheMiddleware())
 	{
 		v0 := api.Group(model.ApiVersion)
-		publicV0 := v0.Group(model.ApiPublic)
 
 		if !strings.Contains(c.Runtime.Test, "t") {
-			logger.Debugf("Token: %s and server will use it", c.Runtime.TokenEncrypt)
+			logger.Debugf("Token is `%s` and server will use it", c.Runtime.TokenEncrypt)
 			v0.Use(ginAuthMiddleware(c))
 		} else {
-			logger.Warnf("Token check is disabled")
+			logger.Warnf("Token checker is disabled")
 		}
 
 		v0.GET(model.Api_Pull, HandlerPull(c))
@@ -148,7 +147,6 @@ func Run(c *model.UContext) {
 		v0.POST(model.Api_Upload, HandlerUpload(c))
 		v0.GET(model.Api_Download, HandlerDownload(c))
 
-		publicV0.GET(model.ApiPublicShare, HandlerPublicShare(c))
 	}
 	logger.Infof("Server is running on :%d", c.Server.Api.Port)
 	if err := r.Run(":" + strconv.Itoa(c.Server.Api.Port)); err != nil {

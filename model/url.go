@@ -5,15 +5,14 @@ import "fmt"
 const (
 	ApiPrefix        = "api"
 	ApiVersion       = "v0"
-	ApiPublic        = "public"
+	ApiVersion1      = "v1"
 	Api_Push         = "push"
 	Api_Pull         = "pull"
 	Api_History      = "history"
 	Api_Upload       = "upload"
 	Api_Download     = "download/*filename"
 	Api_DownloadPure = "download"
-
-	ApiPublicShare = "share"
+	Api_WS           = "ws"
 )
 
 func UrlPushApi(c *UContext) string {

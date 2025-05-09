@@ -11,8 +11,8 @@ type Clipboard struct {
 	Id          int64  `json:"id" db:"id"`
 	Ts          int64  `json:"ts" db:"ts"` //ms timestamp
 	Content     string `json:"content" db:"content"`
-	Hostname    string `json:"hostname" db:"hostname"`         // sender
-	ContentType string `json:"content_type" db:"content_type"` //
+	Hostname    string `json:"hostname" db:"hostname"` // sender
+	ContentType string `json:"content_type" db:"content_type"`
 }
 
 func NewClipoardWithDefault() *Clipboard {

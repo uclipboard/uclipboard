@@ -247,9 +247,3 @@ func HandlerHistory(c *model.UContext) func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("", clipboardsBytes))
 	}
 }
-
-func HandlerPublicShare(c *model.UContext) func(ctx *gin.Context) {
-	// TODO share binary file to public
-	return func(ctx *gin.Context) {
-	}
-}
