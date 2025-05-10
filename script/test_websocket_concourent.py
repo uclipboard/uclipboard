@@ -16,14 +16,8 @@ async def send_messages(uri):
                     "content_type": "text"
                 }
                 await websocket.send(json.dumps(message))
-                await websocket.pong()
                 print(f"sent {i+1}", end='\r')
                 await asyncio.sleep(0.1)
-            except asyncio.TimeoutError:
-                print("Sending keepalive ping...")
-                await websocket.ping()
-            except websockets.ConnectionClosed as e:
-                print(f'Terminated', e)
             except Exception as e:
                 print(f"send failed: {str(e)}")
                 break

@@ -30,6 +30,10 @@ func wsServerPingPong(uctx *model.UContext, wso *wsObject) {
 		time.Sleep(time.Duration(uctx.Server.Api.PingInterval) * time.Millisecond)
 		logger.Trace("Sending ping message")
 		if err := wso.WritePing(); err != nil {
+			if err == websocket.ErrCloseSent {
+				logger.Debug("Websocket closed.")
+				return
+			}
 			logger.Errorf("Failed to send ping message: %v", err)
 			return
 		}
@@ -68,7 +72,6 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// default upgrader
 		wsUpgrader := websocket.Upgrader{
-		    
 			CheckOrigin: func(r *http.Request) bool {
 				// Allow all origins
 				return true
@@ -80,8 +83,8 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 			logger.Errorf("Failed to upgrade connection: %v", err)
 			return
 		}
-		defer ws.Close()
 		wso := NewWsObject(ws)
+		defer wso.Close()
 		go wsServerPingPong(uctx, wso)
 
 		go wsServerProactivePush(uctx, wso)

@@ -73,3 +73,15 @@ func (wso *wsObject) WritePing() error {
 func (wso *wsObject) SetPongHandler(f func(string) error) {
 	wso.ws.SetPongHandler(f)
 }
+
+func (wso *wsObject) Close() error {
+	wso.wlock.Lock()
+	defer wso.wlock.Unlock()
+	wso.rlock.Lock()
+	defer wso.rlock.Unlock()
+
+	if err := wso.ws.Close(); err != nil {
+		return err
+	}
+	return nil
+}
