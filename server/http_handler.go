@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/uclipboard/uclipboard/model"
@@ -20,13 +21,14 @@ func HandlerPush(uctx *model.UContext) gin.HandlerFunc {
 	logger := model.NewModuleLogger("HandlerPush")
 
 	return func(ctx *gin.Context) {
-		clipboardData := model.NewClipoardWithDefault()
+		clipboardData := model.NewClipboardWithDefault()
 		if err := ctx.BindJSON(&clipboardData); err != nil {
 			logger.Debugf("BindJSON error: %v", err)
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("request is invalid.", nil))
 			return
 		}
-
+		// we should not trust the client's timestamp
+		clipboardData.Ts = time.Now().UnixMilli()
 		if len(clipboardData.Content) > uctx.ContentLengthLimit {
 			ctx.JSON(http.StatusRequestEntityTooLarge, model.NewDefaultServeRes(fmt.Sprintf("clipboard is too large[limit: %dB]", uctx.ContentLengthLimit), nil))
 			return
@@ -35,10 +37,14 @@ func HandlerPush(uctx *model.UContext) gin.HandlerFunc {
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("content is empty", nil))
 			return
 		}
+		uctx.Runtime.ClipboardPushNotify.L.Lock()
 		if err := core.AddClipboardRecord(clipboardData); err != nil {
 			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecord error: %v", err.Error())
+			uctx.Runtime.ClipboardPushNotify.L.Unlock()
 			return
 		}
+		uctx.Runtime.ClipboardPushNotify.L.Unlock()
+		uctx.Runtime.ClipboardPushNotify.Broadcast()
 		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("", nil))
 	}
 }
@@ -62,7 +68,7 @@ func HandlerPull(conf *model.UContext) gin.HandlerFunc {
 	}
 }
 
-func HandlerUpload(conf *model.UContext) gin.HandlerFunc {
+func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 	logger := model.NewModuleLogger("HandlerUpload")
 	return func(ctx *gin.Context) {
 		file, err := ctx.FormFile("file")
@@ -71,7 +77,7 @@ func HandlerUpload(conf *model.UContext) gin.HandlerFunc {
 			return
 		}
 		lifetime := ctx.Query("lifetime")
-		lifetimeSecs, err := core.ConvertLifetime(lifetime, conf.Server.Store.DefaultFileLife)
+		lifetimeSecs, err := core.ConvertLifetime(lifetime, uctx.Server.Store.DefaultFileLife)
 		if err != nil {
 			logger.Debugf("ConvertLifetime error: %v", err)
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("invalid lifetime", nil))
@@ -98,7 +104,7 @@ func HandlerUpload(conf *model.UContext) gin.HandlerFunc {
 		logger.Debugf("Upload file metadata is: %v", fileMetadata)
 
 		// save file to tmp directory and get the path to save in db
-		filePath := filepath.Join(conf.Server.Store.TmpPath, fileMetadata.TmpPath)
+		filePath := filepath.Join(uctx.Server.Store.TmpPath, fileMetadata.TmpPath)
 		logger.Debugf("Save file to: %s", filePath)
 
 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
@@ -119,15 +125,19 @@ func HandlerUpload(conf *model.UContext) gin.HandlerFunc {
 		logger.Debugf("The new file id is %v", fileId)
 
 		// save clipboard record to db
-		newClipboardRecord := model.NewClipoardWithDefault()
+		newClipboardRecord := model.NewClipboardWithDefault()
 		newClipboardRecord.Content = fmt.Sprintf("%s@%d", fileMetadata.FileName, fileId) // add fileid to clipboard record
 		newClipboardRecord.Hostname = hostname
 		newClipboardRecord.ContentType = "binary"
 		logger.Tracef("Upload binary file clipboard record: %v", newClipboardRecord)
+		uctx.Runtime.ClipboardPushNotify.L.Lock()
 		if err := core.AddClipboardRecord(newClipboardRecord); err != nil {
 			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecord error: %v", err.Error())
+			uctx.Runtime.ClipboardPushNotify.L.Unlock()
 			return
 		}
+		uctx.Runtime.ClipboardPushNotify.L.Unlock()
+		uctx.Runtime.ClipboardPushNotify.Broadcast()
 
 		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
 			"life_time": lifetimeSecs})

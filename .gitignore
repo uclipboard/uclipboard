@@ -4,3 +4,5 @@ package-lock.json
 package.json
 /build
 /conf.toml
+*.db
+.venv

@@ -15,14 +15,22 @@ type Clipboard struct {
 	ContentType string `json:"content_type" db:"content_type"`
 }
 
-func NewClipoardWithDefault() *Clipboard {
+// even though the ServerResponse is used in response,
+// we still use type field in the struct to distinguish the message type
+// from the client
+type WSMessage struct {
+	Type string `json:"type"`
+	ServerResponse
+}
+
+func NewClipboardWithDefault() *Clipboard {
 	// I don't know why it doesn't support default value
 	return &Clipboard{Hostname: "unknown", ContentType: "text", Ts: time.Now().UnixMilli()}
 }
 
 // It generates the hostname so take care of where it is called
 func NewFullClipoard(c string) *Clipboard {
-	data := NewClipoardWithDefault()
+	data := NewClipboardWithDefault()
 	data.Content = c
 	hostname, err := os.Hostname()
 	// if we can't get the hostname,

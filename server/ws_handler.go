@@ -1,41 +1,74 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/uclipboard/uclipboard/model"
+	"github.com/uclipboard/uclipboard/server/core"
 )
 
-func wsServerPingPong(uctx *model.UContext, ws *websocket.Conn) {
+const (
+	WSMsgTypeErr   = "error"
+	WSMsgTypeData  = "data"
+	WSMsgTypePush  = "push"
+	WSMsgTypePPush = "ppush"
+	WSMsgTypePull  = "pull"
+)
+
+func wsServerPingPong(uctx *model.UContext, wso *wsObject) {
 	logger := model.NewModuleLogger("wsServerPing")
-	ws.SetPongHandler(func(string) error {
+	wso.SetPongHandler(func(string) error {
 		logger.Trace("Received pong message")
 		return nil
 	})
 	logger.Debugf("ws ping interval: %dms", uctx.Server.Api.PingInterval)
 	for {
+		time.Sleep(time.Duration(uctx.Server.Api.PingInterval) * time.Millisecond)
 		logger.Trace("Sending ping message")
-		if err := ws.WriteMessage(websocket.PingMessage, []byte("ping")); err != nil {
-			if err == websocket.ErrCloseSent {
-				logger.Debug("WebSocket connection closed")
-				return
-			}
-
-			logger.Errorf("Failed to write ping message: %v", err)
+		if err := wso.WritePing(); err != nil {
+			logger.Errorf("Failed to send ping message: %v", err)
 			return
 		}
-		time.Sleep(time.Duration(uctx.Server.Api.PingInterval) * time.Millisecond)
 	}
 }
 
+func wsServerProactivePush(uctx *model.UContext, wso *wsObject) {
+	logger := model.NewModuleLogger("wsServerPush")
+	for {
+		logger.Debug("Waiting for clipboard update notification")
+		uctx.Runtime.ClipboardPushNotify.L.Lock()
+		uctx.Runtime.ClipboardPushNotify.Wait()
+		clipboardData, err := core.QueryLatestClipboardRecord(1)
+		if err != nil {
+			uctx.Runtime.ClipboardPushNotify.L.Unlock()
+			wso.ErrorMsg("QueryLatestClipboardRecord error: %v", err)
+			return
+		}
+		uctx.Runtime.ClipboardPushNotify.L.Unlock()
+		// push the clipboard data to the client
+		data, err := json.Marshal(clipboardData)
+		if err != nil {
+			wso.ErrorMsg("Marshal clipboardData error: %v", err)
+			return
+		}
+		if err := wso.ResponseMsg(WSMsgTypePPush, "ok", data); err != nil {
+			logger.Errorf("Failed to send response message: %v", err)
+			return
+		}
+	}
+}
+
+// ws api is used to pass the clipboard text. File manager should be managed by the http api
 func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 	logger := model.NewModuleLogger("HandlerWebSocket")
 	return func(ctx *gin.Context) {
 		// default upgrader
 		wsUpgrader := websocket.Upgrader{
+		    
 			CheckOrigin: func(r *http.Request) bool {
 				// Allow all origins
 				return true
@@ -48,25 +81,86 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 			return
 		}
 		defer ws.Close()
-		// create a ping timer goroutine
-		go wsServerPingPong(uctx, ws)
+		wso := NewWsObject(ws)
+		go wsServerPingPong(uctx, wso)
 
-		msgType, p, err := ws.ReadMessage()
-		if err != nil {
-			if websocket.IsCloseError(err,
-				websocket.CloseNormalClosure, websocket.CloseGoingAway,
-				websocket.CloseNoStatusReceived, websocket.CloseServiceRestart,
-				websocket.CloseTryAgainLater) {
-				logger.Debug("Websocket closed.")
+		go wsServerProactivePush(uctx, wso)
+
+		for {
+			msgType, p, err := wso.ReadMessage()
+			if err != nil {
+				if websocket.IsCloseError(err,
+					websocket.CloseNormalClosure, websocket.CloseGoingAway,
+					websocket.CloseNoStatusReceived, websocket.CloseServiceRestart,
+					websocket.CloseTryAgainLater) {
+					logger.Debug("Websocket closed.")
+					return
+				}
+				logger.Errorf("Failed to read message: %v", err)
 				return
 			}
-			logger.Errorf("Failed to read message: %v", err)
+			if msgType != websocket.TextMessage {
+				logger.Errorf("Invalid message type: %d", msgType)
+				return
+			}
+			logger.Debugf("Received message: %v", string(p))
+			var wsMsg model.WSMessage
+			if err := json.Unmarshal(p, &wsMsg); err != nil {
+				wso.ErrorMsg("Unmarshal wsMsg error: %v", err)
+				return
+			}
+			logger.Debugf("Received message type: %v", wsMsg.Type)
+			switch wsMsg.Type {
+			case WSMsgTypePush:
+				clipboardData := model.NewClipboardWithDefault()
+				if err := json.Unmarshal(p, clipboardData); err != nil {
+					wso.ErrorMsg("Unmarshal clipboardData error: %v", err)
+					return
+				}
+				// we should not trust the client's timestamp
+				clipboardData.Ts = time.Now().UnixMilli()
+				logger.Debugf("Received clipboard data: %v", clipboardData)
+				if len(clipboardData.Content) > uctx.ContentLengthLimit {
+					wso.ErrorMsg("clipboard is too large: %dB > %dB]", len(clipboardData.Content), uctx.ContentLengthLimit)
+					return
+				}
+				if clipboardData.Content == "" {
+					wso.ErrorMsg("content is empty")
+					return
+				}
+				uctx.Runtime.ClipboardPushNotify.L.Lock()
+				if err := core.AddClipboardRecord(clipboardData); err != nil {
+					wso.ErrorMsg("AddClipboardRecord error: %v", err)
+					uctx.Runtime.ClipboardPushNotify.L.Unlock()
+					return
+				}
+				uctx.Runtime.ClipboardPushNotify.L.Unlock()
+				uctx.Runtime.ClipboardPushNotify.Broadcast()
+				// if err := wso.ResponseMsg(WSMsgTypeData, "ok", nil); err != nil {
+				// 	logger.Errorf("Failed to send response message: %v", err)
+				// 	return
+				// }
+			case WSMsgTypePull:
+				// return the latest 1 clipboard data
+				clipboardArr, err := core.QueryLatestClipboardRecord(uctx.Server.Api.PullSize)
+				if err != nil {
+					wso.ErrorMsg("GetLatestClipboardRecord error: %v", err)
+					return
+				}
+				clipboardsBytes, err := json.Marshal(clipboardArr)
+				if err != nil {
+					wso.ErrorMsg("Marshal clipboardArr error: %v", err)
+					return
+				}
+				// send the clipboard data to the client
+				if err := wso.ResponseMsg(WSMsgTypeData, "ok", clipboardsBytes); err != nil {
+					logger.Errorf("Failed to send response message: %v", err)
+					return
+				}
+			default:
+				logger.Warnf("Unknown message type: %v", wsMsg.Type)
+				return
+			}
 		}
-		if msgType != websocket.BinaryMessage {
-			logger.Errorf("Invalid message type: %d", msgType)
-			return
-		}
-		logger.Debugf("Received message: %s", p)
-
 	}
 }

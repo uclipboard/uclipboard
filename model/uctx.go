@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -64,6 +65,7 @@ type UContext struct {
 		ShowHelp              bool
 		UploadFileLifetime    int64
 		UploadFileLifetimeStr string
+		ClipboardPushNotify   *sync.Cond
 	}
 }
 
@@ -95,6 +97,7 @@ func NewUCtxWithDefault() *UContext {
 	c.Server.Api.HistoryPageSize = 20
 	c.Server.Api.CacheMaxAge = 60 * 60 * 24 * 30 // 30 days
 	c.Server.Api.PingInterval = 5000             // ms
+	c.Runtime.ClipboardPushNotify = sync.NewCond(&sync.Mutex{})
 	return &c
 }
 

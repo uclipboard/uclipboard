@@ -131,23 +131,23 @@ func Run(c *model.UContext) {
 	// api
 	api := r.Group(model.ApiPrefix)
 	api.Use(removeCacheMiddleware())
+	if !strings.Contains(c.Runtime.Test, "t") {
+		logger.Debugf("Token is `%s` and server will use it", c.Runtime.TokenEncrypt)
+		api.Use(ginAuthMiddleware(c))
+	} else {
+		logger.Warnf("Token checker is disabled")
+	}
+
 	{
 		v0 := api.Group(model.ApiVersion)
-		v1 := api.Group(model.ApiVersion1)
-
-		if !strings.Contains(c.Runtime.Test, "t") {
-			logger.Debugf("Token is `%s` and server will use it", c.Runtime.TokenEncrypt)
-			v0.Use(ginAuthMiddleware(c))
-		} else {
-			logger.Warnf("Token checker is disabled")
-		}
-
 		v0.GET(model.Api_Pull, HandlerPull(c))
 		v0.GET(model.Api_History, HandlerHistory(c))
 		v0.POST(model.Api_Push, HandlerPush(c))
 		v0.POST(model.Api_Upload, HandlerUpload(c))
 		v0.GET(model.Api_Download, HandlerDownload(c))
-
+	}
+	{
+		v1 := api.Group(model.ApiVersion1)
 		v1.GET(model.Api_WS, HandlerWebSocket(c))
 	}
 	logger.Infof("Server is running on :%d", c.Server.Api.Port)
