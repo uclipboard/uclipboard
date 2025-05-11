@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"bytes"
-	"os/exec"
 
 	"github.com/uclipboard/uclipboard/model"
 )
@@ -11,26 +10,17 @@ type WlClipboard struct {
 }
 
 func (WL *WlClipboard) Copy(s string) error {
-	copyCmd := exec.Command("wl-copy")
-	copyCmd.Stdin = bytes.NewBufferString(s)
-
-	err := copyCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return defaultCopy("wl-copy")(s)
 }
 
 func (WL *WlClipboard) Paste() (string, error) {
 	// first, check type
-	checkCmd := exec.Command("wl-paste", "--list-types")
+	checkCmd := neighborExec("wl-paste --list-types")
 	// read stdout and check whether it contains "x-kde-lockscreen", that means the clipboard is locked
-	var checkTypeOut bytes.Buffer
-	checkCmd.Stdout = &checkTypeOut
+	checkTypeOut := bytes.NewBuffer(nil)
+	checkCmd.Stdout = checkTypeOut
 
-	err := checkCmd.Run()
-	if err != nil {
+	if err := checkCmd.Run(); err != nil {
 		return "", err
 	}
 
@@ -41,12 +31,11 @@ func (WL *WlClipboard) Paste() (string, error) {
 		return "", ErrLockedClipboard
 	}
 
-	pasteCmd := exec.Command("wl-paste", "-n")
-	var out bytes.Buffer
-	pasteCmd.Stdout = &out
+	pasteCmd := neighborExec("wl-paste -n")
+	out := bytes.NewBuffer(nil)
+	pasteCmd.Stdout = out
 
-	err = pasteCmd.Run()
-	if err != nil {
+	if err := pasteCmd.Run(); err != nil {
 		return "", err
 	}
 	return out.String(), nil
