@@ -15,7 +15,7 @@ FRONTEND_SRCS := $(shell find $(FRONTEND_DIR)/src $(FRONTEND_DIR)/public -type f
 
 TARGET := uclipboard
 
-TMP_BUILD_CMD := $(GO) build -ldflags="-X 'github.com/uclipboard/uclipboard/model.Version=$(shell git describe --tags --always --dirty)'" -o $(BUILD_DIR)/$(TARGET) . #ignore optimization for debug
+DEBUG_BUILD := $(GO) build -ldflags="-X 'github.com/uclipboard/uclipboard/model.Version=$(shell git describe --tags --always --dirty)'" -o $(BUILD_DIR)/$(TARGET) . #ignore optimization for debug
 
 LOG_LEVEL := info
 
@@ -35,14 +35,13 @@ docker-image: bin
 	@docker build -t djh233/uclipboard:$(VERSION) .
 	@docker build -t djh233/uclipboard:latest .
 
-build-target-noweb: 
+build-target-noweb: $(SRCS)
 	@mkdir -p $(BUILD_DIR)
 	@echo "building $(TARGET) without any optimization"
-	@GOOS=$(GOOS) GOARCH=$(GOARCH) $(TMP_BUILD_CMD)
+	@GOOS=$(GOOS) GOARCH=$(GOARCH) $(DEBUG_BUILD)
 	@echo "building completed"
 
-$(BUILD_DIR)/$(TARGET): $(SRCS) $(FRONTEND_DIST)/index.html
-	@make build-target-noweb
+$(BUILD_DIR)/$(TARGET): $(FRONTEND_DIST)/index.html build-target-noweb
 
 $(FRONTEND_DIST)/index.html: $(FRONTEND_SRCS) 
 	@echo "building frontend"

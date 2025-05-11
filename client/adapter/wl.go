@@ -3,6 +3,8 @@ package adapter
 import (
 	"bytes"
 	"os/exec"
+
+	"github.com/uclipboard/uclipboard/model"
 )
 
 type WlClipboard struct {
@@ -50,6 +52,8 @@ func (WL *WlClipboard) Paste() (string, error) {
 	return out.String(), nil
 }
 
-func NewWl() *WlClipboard {
-	return &WlClipboard{}
+func init() {
+	RegisterFactory("wl", func(_ *model.UContext) ClipboardCmdAdapter {
+		return &WlClipboard{}
+	})
 }

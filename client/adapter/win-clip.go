@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/uclipboard/uclipboard/model"
 )
 
 const (
@@ -58,6 +60,8 @@ func (WC *WinClip) Paste() (string, error) {
 	return outStr, nil
 }
 
-func NewWinClip() *WinClip {
-	return &WinClip{}
+func init() {
+	RegisterFactory("wc", func(_ *model.UContext) ClipboardCmdAdapter {
+		return &WinClip{}
+	})
 }

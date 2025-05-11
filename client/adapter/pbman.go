@@ -1,5 +1,7 @@
 package adapter
 
+import "github.com/uclipboard/uclipboard/model"
+
 type PBMClipboard struct {
 }
 
@@ -9,6 +11,9 @@ func (pbm *PBMClipboard) Copy(s string) error {
 func (pbm *PBMClipboard) Paste() (string, error) {
 	return defaultPaste("pbman paste")()
 }
-func NewPBMClipboard() *PBMClipboard {
-	return &PBMClipboard{}
+
+func init() {
+	RegisterFactory("pbm", func(_ *model.UContext) ClipboardCmdAdapter {
+		return &PBMClipboard{}
+	})
 }

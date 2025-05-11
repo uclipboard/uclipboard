@@ -10,21 +10,8 @@ import (
 )
 
 func Run(c *model.UContext) {
-	var clipboardAdapter adapter.ClipboardCmdAdapter
-	logger := model.NewModuleLogger("client")
-	switch c.Client.Adapter.Type {
-	case "wl":
-		clipboardAdapter = adapter.NewWl()
-	case "xc":
-		clipboardAdapter = adapter.NewXClip(c.Client.Adapter.XSelection)
-	case "wc":
-		clipboardAdapter = adapter.NewWinClip()
-	case "pbm":
-		clipboardAdapter = adapter.NewPBMClipboard()
-	default:
-		// MacOS(pbcopy/paste)
-		logger.Fatal("error unknown clipboard adapter")
-	}
+	adapter := adapter.GetAdapterFactory(c.Client.Adapter.Type)
+	clipboardAdapter := adapter(c)
 	client := NewUClipboardHttpClient(c)
 	mainLoop(c, clipboardAdapter, client)
 }

@@ -22,6 +22,6 @@ for osarch in "${GOOSARCHS[@]}"; do
         full_name+=".exe"
     fi
     echo "Building $full_name with $ldflags"
-    GOOS=$GOOS GOARCH=$GOARCH go build -o $full_name  -ldflags="$ldflags" .
+    GOOS=$GOOS GOARCH=$GOARCH go build -o $full_name -trimpath -ldflags="$ldflags" .
 done
 

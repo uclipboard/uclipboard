@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"os/exec"
 	"strings"
+
+	"github.com/uclipboard/uclipboard/model"
 )
 
 type XClipClipboard struct {
@@ -42,6 +44,8 @@ func (XC *XClipClipboard) Paste() (string, error) {
 	return outputStr, nil
 }
 
-func NewXClip(selection string) *XClipClipboard {
-	return &XClipClipboard{selection: selection}
+func init() {
+	RegisterFactory("xc", func(u *model.UContext) ClipboardCmdAdapter {
+		return &XClipClipboard{selection: u.Client.Adapter.XSelection}
+	})
 }

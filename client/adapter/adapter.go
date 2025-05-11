@@ -62,3 +62,20 @@ var (
 	ErrLockedClipboard          = errors.New("perhaps system clipboard is locked so that adapter can't access it")
 	ErrClipboardDataTypeUnknown = errors.New("the content type of clipboard is unrecognized")
 )
+
+var factories = make(map[string]func(*model.UContext) ClipboardCmdAdapter)
+
+func RegisterFactory(name string, factory func(*model.UContext) ClipboardCmdAdapter) {
+	if _, ok := factories[name]; ok {
+		panic("adapter: already registered " + name)
+	}
+	factories[name] = factory
+}
+
+func GetAdapterFactory(name string) func(*model.UContext) ClipboardCmdAdapter {
+	factory, ok := factories[name]
+	if !ok {
+		panic("adapter: unknown adapter " + name)
+	}
+	return factory
+}
