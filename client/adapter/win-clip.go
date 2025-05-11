@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os/exec"
 	"strings"
 )
 
@@ -18,29 +17,21 @@ type WinClip struct {
 }
 
 func (WC *WinClip) Copy(s string) error {
-	copyCmd := exec.Command("win-clip.exe", "copy", "-u")
 	s = strings.ReplaceAll(s, "\n", "\r\n")
-	copyCmd.Stdin = bytes.NewBufferString(s)
-
-	err := copyCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return defaultCopy("win-clip.exe copy -u")(s)
 }
 
 func parseStdErr(stdErrStr string) (int, string) {
-	var errCode int
+	errCode := 0
 	fmt.Sscanf(stdErrStr, "[%d]", &errCode)
 	errString := stdErrStr[strings.Index(stdErrStr, "]")+1:]
 	return errCode, errString
 }
 
 func (WC *WinClip) Paste() (string, error) {
-	pasteCmd := exec.Command("win-clip.exe", "paste", "-u")
-	var stdOut bytes.Buffer
-	pasteCmd.Stdout = &stdOut
+	pasteCmd := neighborExec("win-clip.exe paste -u")
+	stdOut := bytes.NewBuffer(nil)
+	pasteCmd.Stdout = stdOut
 	stdErr := bytes.NewBuffer(nil)
 	pasteCmd.Stderr = stdErr
 	err := pasteCmd.Run()

@@ -19,8 +19,8 @@ func Run(c *model.UContext) {
 		clipboardAdapter = adapter.NewXClip(c.Client.Adapter.XSelection)
 	case "wc":
 		clipboardAdapter = adapter.NewWinClip()
-	case "pb":
-		clipboardAdapter = adapter.NewPBClipboard()
+	case "pbm":
+		clipboardAdapter = adapter.NewPBMClipboard()
 	default:
 		// MacOS(pbcopy/paste)
 		logger.Fatal("error unknown clipboard adapter")

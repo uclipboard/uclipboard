@@ -3,22 +3,14 @@ package model
 import (
 	"flag"
 	"fmt"
-	"os"
-	"path/filepath"
 )
 
 func InitFlags(c *UContext) {
-	// get the running program path
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
 
 	// modify the `Runtime` config struct
 	flag.StringVar(&c.Runtime.Mode, "mode", "instant", "Specify the running mode. (client|server|instant)")
 	flag.StringVar(&c.Runtime.LogLevel, "log-level", "info", "logger level [info/debug/trace]")
-	flag.StringVar(&c.Runtime.ConfPath, "conf", fmt.Sprintf("%s/conf.toml", exPath), "Specify the config path.")
+	flag.StringVar(&c.Runtime.ConfPath, "conf", fmt.Sprintf("%s/conf.toml", ExDir()), "Specify the config path.")
 	flag.StringVar(&c.Runtime.LogPath, "log", "", "Specify the log path.")
 	flag.BoolVar(&c.Runtime.ShowVersion, "version", false, "show version")
 	flag.BoolVar(&c.Runtime.ShowHelp, "help", false, "show help")

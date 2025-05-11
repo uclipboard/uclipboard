@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -45,4 +47,13 @@ func TokenEncrypt(token string) string {
 	md5_3 := GetMD5Hash(fmt.Sprintf(encryptSalt, md5_2))
 
 	return md5_3
+}
+
+// get the current executable file's directory
+func ExDir() string {
+	exPath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	return filepath.Dir(exPath)
 }

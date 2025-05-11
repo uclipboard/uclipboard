@@ -31,7 +31,7 @@ func wsServerPingPong(uctx *model.UContext, wso *wsObject) {
 		logger.Trace("Sending ping message")
 		if err := wso.WritePing(); err != nil {
 			if err == websocket.ErrCloseSent {
-				logger.Debug("Websocket closed.")
+				logger.Debug("Websocket has been closed.")
 				return
 			}
 			logger.Errorf("Failed to send ping message: %v", err)

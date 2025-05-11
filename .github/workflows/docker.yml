@@ -70,5 +70,3 @@ jobs:
           file: ./dockerfile
           push: true
           tags: djh233/uclipboard:latest
-        
-        
