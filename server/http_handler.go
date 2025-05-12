@@ -225,14 +225,17 @@ func HandlerHistory(c *model.UContext) gin.HandlerFunc {
 		}
 
 		historyPageCount := math.Ceil(float64(clipboardsCount) / float64(c.Server.Api.HistoryPageSize))
-
 		clipboards, err := core.QueryClipboardHistory(c, pageInt)
 		if err != nil {
 			core.ServerInternalErrorLogEcho(ctx, logger, "QueryClipboardHistory error: %v", err)
 			return
 		}
-		logger.Tracef("clipboards: %v", clipboards)
-		clipboardsBytes, err := json.Marshal(gin.H{"history": clipboards, "pages": historyPageCount})
+		historyResponse := model.HistoryResponse{
+			History: clipboards,
+			Pages:   int64(historyPageCount),
+			Total:   int64(clipboardsCount),
+		}
+		clipboardsBytes, err := json.Marshal(&historyResponse)
 		if err != nil {
 			core.ServerInternalErrorLogEcho(ctx, logger, "Marshal clipboards error: %v", err)
 			return

@@ -1,1 +1,1 @@
-put dist folder of frontend built here
+Place the built frontend's dist folder here

@@ -78,6 +78,12 @@ type FileMetadataResponse struct {
 	LifeTime int64  `json:"life_time"` // seconds
 }
 
+type HistoryResponse struct {
+	History []Clipboard `json:"history"`
+	Pages   int64       `json:"pages"`
+	Total   int64       `json:"total"`
+}
+
 type ServerResponse struct {
 	Msg  string          `json:"msg"`
 	Data json.RawMessage `json:"data"`
