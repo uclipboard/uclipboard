@@ -6,7 +6,7 @@ url = "http://example.com:4533/" #necessary
 type = "polling" #todo, specify connect mode in the fulture
 interval = 1000 #ms, the interval time in polling mode
 timeout = 10000 #ms, the timeout of http client in polling mode if 0, uclipboard will create a default (wait forever) client
-upload_timeout = 300 #s, the timeout of http client in uploading file
+upload_timeout = 300 #s, the timeout of http client when uploading file
 
 [client.adapter]
 type = "" #necessary, specify the adapter method, e.g. "xc" for xclip, "wc" for win-clip

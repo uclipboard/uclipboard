@@ -42,17 +42,21 @@ func wsServerPingPong(uctx *model.UContext, wso *wsObject) {
 
 func wsServerProactivePush(uctx *model.UContext, wso *wsObject) {
 	logger := model.NewModuleLogger("wsServerPush")
+	sub := uctx.Runtime.ClipboardUpdateNotify.Subscribe()
+	defer uctx.Runtime.ClipboardUpdateNotify.Unsubscribe(sub)
 	for {
 		logger.Debug("Waiting for clipboard update notification")
-		uctx.Runtime.ClipboardPushNotify.L.Lock()
-		uctx.Runtime.ClipboardPushNotify.Wait()
-		clipboardData, err := core.QueryLatestClipboardRecord(1)
-		if err != nil {
-			uctx.Runtime.ClipboardPushNotify.L.Unlock()
-			wso.ErrorMsg("QueryLatestClipboardRecord error: %v", err)
+		msg, ok := <-sub
+		if !ok {
+			logger.Debug("Clipboard update notification channel closed")
 			return
 		}
-		uctx.Runtime.ClipboardPushNotify.L.Unlock()
+		logger.Debug("Received clipboard update notification")
+		clipboardData, ok := msg.(*model.Clipboard)
+		if !ok {
+			wso.ErrorMsg("Invalid message type from notify msgqueue")
+			return
+		}
 		// push the clipboard data to the client
 		data, err := json.Marshal(clipboardData)
 		if err != nil {
@@ -131,14 +135,10 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 					wso.ErrorMsg("content is empty")
 					return
 				}
-				uctx.Runtime.ClipboardPushNotify.L.Lock()
-				if err := core.AddClipboardRecord(clipboardData); err != nil {
-					wso.ErrorMsg("AddClipboardRecord error: %v", err)
-					uctx.Runtime.ClipboardPushNotify.L.Unlock()
+				if err := core.AddClipboardRecordAndNotify(uctx, clipboardData); err != nil {
+					wso.ErrorMsg("AddClipboardRecordAndNotify error: %v", err)
 					return
 				}
-				uctx.Runtime.ClipboardPushNotify.L.Unlock()
-				uctx.Runtime.ClipboardPushNotify.Broadcast()
 				// if err := wso.ResponseMsg(WSMsgTypeData, "ok", nil); err != nil {
 				// 	logger.Errorf("Failed to send response message: %v", err)
 				// 	return

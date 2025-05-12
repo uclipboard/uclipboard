@@ -46,3 +46,14 @@ func ServerInternalErrorLogEcho(ctx *gin.Context, logger *logrus.Entry, msg stri
 	logger.Errorf(msg, args...)
 	ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes(msg, nil))
 }
+
+func AddClipboardRecordAndNotify(uctx *model.UContext, clipboardData *model.Clipboard) error {
+	logger := model.NewModuleLogger("AddClipboardRecordAndNotify")
+	logger.Tracef("before insert: %v", clipboardData)
+	if err := AddClipboardRecord(clipboardData); err != nil {
+		return err
+	}
+	logger.Tracef("after insert: %v", clipboardData)
+	uctx.Runtime.ClipboardUpdateNotify.Push(clipboardData)
+	return nil
+}

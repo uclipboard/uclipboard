@@ -37,14 +37,11 @@ func HandlerPush(uctx *model.UContext) gin.HandlerFunc {
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("content is empty", nil))
 			return
 		}
-		uctx.Runtime.ClipboardPushNotify.L.Lock()
-		if err := core.AddClipboardRecord(clipboardData); err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecord error: %v", err.Error())
-			uctx.Runtime.ClipboardPushNotify.L.Unlock()
+		if err := core.AddClipboardRecordAndNotify(uctx, clipboardData); err != nil {
+			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecordAndNotify error: %v", err)
 			return
 		}
-		uctx.Runtime.ClipboardPushNotify.L.Unlock()
-		uctx.Runtime.ClipboardPushNotify.Broadcast()
+
 		ctx.JSON(http.StatusOK, model.NewDefaultServeRes("", nil))
 	}
 }
@@ -130,14 +127,10 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 		newClipboardRecord.Hostname = hostname
 		newClipboardRecord.ContentType = "binary"
 		logger.Tracef("Upload binary file clipboard record: %v", newClipboardRecord)
-		uctx.Runtime.ClipboardPushNotify.L.Lock()
-		if err := core.AddClipboardRecord(newClipboardRecord); err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecord error: %v", err.Error())
-			uctx.Runtime.ClipboardPushNotify.L.Unlock()
+		if err := core.AddClipboardRecordAndNotify(uctx, newClipboardRecord); err != nil {
+			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecordAndNotify error: %v", err)
 			return
 		}
-		uctx.Runtime.ClipboardPushNotify.L.Unlock()
-		uctx.Runtime.ClipboardPushNotify.Broadcast()
 
 		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
 			"life_time": lifetimeSecs})

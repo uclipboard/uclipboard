@@ -27,9 +27,10 @@ var (
 	(ts,content,hostname,content_type) select
 	0,'uclipboard started!','uclipboard','text' where (select count(*) from %s) = 0
 	`, clipboardTableName, clipboardTableName)
-	insertClipboard = fmt.Sprintf(`insert into %s 
+	insertReturnUpdatedClipboard = fmt.Sprintf(`insert into %s 
 	(ts,content,hostname,content_type) values
 	(:ts,:content,:hostname,:content_type)
+	returning *
 	`, clipboardTableName)
 	getLatestClipboard = fmt.Sprintf(`select * from %s
 	order by id desc limit `, clipboardTableName) + "%d"  //format limit N support
@@ -93,10 +94,19 @@ func InitDB(c *model.UContext) {
 	dbLogger.Debug("DB init completed")
 }
 
-func AddClipboardRecord(c *model.Clipboard) (err error) {
+// This function is used to create a new record in the clipboard table
+// and modify the content that is passed in
+func AddClipboardRecord(c *model.Clipboard) error {
 	dbLogger.Tracef("call AddclipboardRecord(%v)", c)
-	_, err = DB.NamedExec(insertClipboard, c)
-	return
+	rows, err := DB.NamedQuery(insertReturnUpdatedClipboard, c)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		err = rows.StructScan(c)
+	}
+	return err
 }
 
 func QueryLatestClipboardRecord(N int) (clipboards []model.Clipboard, err error) {
