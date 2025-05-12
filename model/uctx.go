@@ -106,11 +106,11 @@ func LoadConf(defaultUctx *UContext, path string) *UContext {
 
 	content, err := os.ReadFile(path)
 	if err != nil {
-		logger.Fatalf("Can't load config file: %s", err.Error())
+		logger.Fatalf("Can't load config file: %v", err)
 	}
 
 	if err = toml.Unmarshal(content, defaultUctx); err != nil {
-		logger.Fatalf("Can't parse config file: %s", err.Error())
+		logger.Fatalf("Can't parse config file: %v", err)
 	}
 	return defaultUctx
 }

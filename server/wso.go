@@ -50,7 +50,7 @@ func (wso *wsObject) ResponseMsg(_type string, msg string, data []byte) error {
 	if err := wso.ws.WriteJSON(wsMsg); err != nil {
 		return err
 	}
-	wso.logger.Debugf("Sent message: %s", msg)
+	wso.logger.Debugf("Sent message: %v", wsMsg)
 	return nil
 }
 

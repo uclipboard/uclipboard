@@ -43,7 +43,7 @@ func Instant(c *model.UContext) {
 
 		respBody, err := SendPullReq(client, c)
 		if err != nil {
-			logger.Fatalf("cannot pull data from server: %s", err.Error())
+			logger.Fatalf("cannot pull data from server: %v", err)
 		}
 		logger.Tracef("respBody: %s", respBody)
 		clipboardArr, err := ParsePullData(respBody)
@@ -58,7 +58,7 @@ func Instant(c *model.UContext) {
 		logger.Debug("read data from stdin because there is no argument message")
 		in, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			logger.Fatalf("Read data from stdin error: %s", err.Error())
+			logger.Fatalf("Read data from stdin error: %v", err)
 		}
 
 		if len(in) == 0 {

@@ -51,7 +51,7 @@ func HandlerPull(conf *model.UContext) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		clipboardArr, err := core.QueryLatestClipboardRecord(conf.Server.Api.PullSize)
 		if err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "GetLatestClipboardRecord error: %v", err.Error())
+			core.ServerInternalErrorLogEcho(ctx, logger, "GetLatestClipboardRecord error: %v", err)
 			return
 		}
 		clipboardsBytes, err := json.Marshal(clipboardArr)
@@ -105,7 +105,7 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 		logger.Debugf("Save file to: %s", filePath)
 
 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "SaveUploadedFile error: %v", err.Error())
+			core.ServerInternalErrorLogEcho(ctx, logger, "SaveUploadedFile error: %v", err)
 			return
 		}
 
@@ -116,7 +116,7 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 		// save file metadata to db
 		fileId, err := core.AddFileMetadataRecord(fileMetadata)
 		if err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "AddFileMetadataRecord error: %v", err.Error())
+			core.ServerInternalErrorLogEcho(ctx, logger, "AddFileMetadataRecord error: %v", err)
 			return
 		}
 		logger.Debugf("The new file id is %v", fileId)
@@ -135,7 +135,7 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
 			"life_time": lifetimeSecs})
 		if err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "Marshal response data error: %v", err.Error())
+			core.ServerInternalErrorLogEcho(ctx, logger, "Marshal response data error: %v", err)
 			return
 		}
 
@@ -159,7 +159,7 @@ func HandlerDownload(conf *model.UContext) gin.HandlerFunc {
 					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("there are no files in server.", nil))
 					return
 				}
-				core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataLatestRecord error: %v", err.Error())
+				core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataLatestRecord error: %v", err)
 				return
 			}
 
@@ -187,7 +187,7 @@ func HandlerDownload(conf *model.UContext) gin.HandlerFunc {
 					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("specified file not found or has expired.", nil))
 					return
 				}
-				core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataRecordByIdOrName error: %v", err.Error())
+				core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataRecordByIdOrName error: %v", err)
 				return
 			}
 		}
@@ -217,7 +217,7 @@ func HandlerHistory(c *model.UContext) gin.HandlerFunc {
 		logger.Debugf("Request clipboard history page: %v", pageInt)
 		clipboardsCount, err := core.CountClipboardHistory(c)
 		if err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "CountClipboardHistory error: %v", err.Error())
+			core.ServerInternalErrorLogEcho(ctx, logger, "CountClipboardHistory error: %v", err)
 			return
 		}
 
@@ -225,13 +225,13 @@ func HandlerHistory(c *model.UContext) gin.HandlerFunc {
 
 		clipboards, err := core.QueryClipboardHistory(c, pageInt)
 		if err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "QueryClipboardHistory error: %v", err.Error())
+			core.ServerInternalErrorLogEcho(ctx, logger, "QueryClipboardHistory error: %v", err)
 			return
 		}
 		logger.Tracef("clipboards: %v", clipboards)
 		clipboardsBytes, err := json.Marshal(gin.H{"history": clipboards, "pages": historyPageCount})
 		if err != nil {
-			core.ServerInternalErrorLogEcho(ctx, logger, "Marshal clipboards error: %v", err.Error())
+			core.ServerInternalErrorLogEcho(ctx, logger, "Marshal clipboards error: %v", err)
 			return
 		}
 
