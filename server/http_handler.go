@@ -131,9 +131,12 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecordAndNotify error: %v", err)
 			return
 		}
-
-		responseData, err := json.Marshal(gin.H{"file_id": fileId, "file_name": fileMetadata.FileName,
-			"life_time": lifetimeSecs})
+		fmr := model.FileMetadataResponse{
+			Id:       fileId,
+			Name:     fileMetadata.FileName,
+			LifeTime: lifetimeSecs,
+		}
+		responseData, err := json.Marshal(fmr)
 		if err != nil {
 			core.ServerInternalErrorLogEcho(ctx, logger, "Marshal response data error: %v", err)
 			return

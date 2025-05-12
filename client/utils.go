@@ -106,16 +106,16 @@ func ParsePullData(body []byte) (remoteClipboards []model.Clipboard, err error) 
 	return
 }
 
-func ParseUploadInfomation(body []byte) (info map[string]any, err error) {
+func ParseUploadInfomation(body []byte) (*model.FileMetadataResponse, error) {
 	var bodyJson model.ServerResponse
-	if err = json.Unmarshal(body, &bodyJson); err != nil {
+	if err := json.Unmarshal(body, &bodyJson); err != nil {
 		return nil, err
 	}
-
+	info := model.FileMetadataResponse{}
 	if err := json.Unmarshal(bodyJson.Data, &info); err != nil {
 		return nil, err
 	}
 
-	return
+	return &info, nil
 
 }

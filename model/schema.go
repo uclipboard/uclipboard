@@ -72,6 +72,12 @@ func NewFileMetadataWithDefault() *FileMetadata {
 	}
 }
 
+type FileMetadataResponse struct {
+	Id       int64  `json:"file_id"`
+	Name     string `json:"file_name"`
+	LifeTime int64  `json:"life_time"` // seconds
+}
+
 type ServerResponse struct {
 	Msg  string          `json:"msg"`
 	Data json.RawMessage `json:"data"`
