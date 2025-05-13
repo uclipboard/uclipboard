@@ -27,6 +27,7 @@ type UContext struct {
 			Type       string `toml:"type"`
 			XSelection string `toml:"X_selection"`
 		} `toml:"adapter"`
+		UnixSocketPath string `toml:"unix_socket_name"`
 	} `toml:"client"`
 
 	Server struct {
@@ -84,6 +85,7 @@ func NewUCtxWithDefault() *UContext {
 	c.Client.Connect.Timeout = 10000
 	c.Client.Connect.UploadTimeout = 300
 	c.Client.Adapter.XSelection = "clipboard"
+	c.Client.UnixSocketPath = "uclipboard.sock"
 
 	c.Server.TimerInterval = 60
 	c.Server.AccessLog = false

@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	ApiPrefix        = "api"
@@ -33,4 +36,16 @@ func UrlUploadApi(c *UContext) string {
 
 func UrlDownloadApi(c *UContext, fileName string) string {
 	return fmt.Sprintf("%s/%s/%s/%s/%s?token=%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_DownloadPure, fileName, c.Runtime.TokenEncrypt)
+}
+
+func UrlWsApi(c *UContext) string {
+	wsUrl := c.Client.Connect.Url
+	if strings.HasPrefix(wsUrl, "http://") {
+		wsUrl = strings.Replace(wsUrl, "http://", "ws://", 1)
+	} else if strings.HasPrefix(wsUrl, "https://") {
+		wsUrl = strings.Replace(wsUrl, "https://", "wss://", 1)
+	} else {
+		panic("url must start with http:// or https://")
+	}
+	return fmt.Sprintf("%s/%s/%s/%s?token=%s", wsUrl, ApiPrefix, ApiVersion1, Api_WS, c.Runtime.TokenEncrypt)
 }

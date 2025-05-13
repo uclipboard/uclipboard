@@ -149,10 +149,7 @@ func (ctx *loopContenxt) stageLocalDecision(currentClipboardContent string) (doP
 	ctx.logger.Tracef("currentClipboard %q[%v]\n", currentClipboardContent, []byte(currentClipboardContent))
 	if ctx.previousClipboard.Content != currentClipboardContent {
 		clipboardContentIfIsFile := DetectAndConcatFileUrl(ctx.uctx, &ctx.previousClipboard)
-		if currentClipboardContent == clipboardContentIfIsFile {
-			return false
-		}
-		return true
+		return ctx.previousClipboard.Content != clipboardContentIfIsFile
 	}
 	return false
 }
@@ -169,9 +166,9 @@ func (ctx *loopContenxt) stagePush(currentClipboard string) bool {
 	return true
 }
 
-func mainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, client *http.Client) {
+func pollingMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, client *http.Client) {
 	logger := model.NewModuleLogger("loop")
-	logger.Tracef("into mainLoop")
+	logger.Tracef("into polling mainLoop")
 
 	dynamicSleepTime := time.Duration(conf.Client.Connect.Interval) * time.Millisecond
 	logger.Debugf("default sleep time: %v", dynamicSleepTime)

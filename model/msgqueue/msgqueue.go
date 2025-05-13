@@ -45,3 +45,15 @@ func (mq *MsgQueue) Push(msg any) {
 		}
 	}
 }
+
+func (mq *MsgQueue) PushWithCopyFunction(msg any, copy func(msg any) any) {
+	mq.lock.RLock()
+	defer mq.lock.RUnlock()
+	for sub := range mq.subscribers {
+		select {
+		case sub <- copy(msg):
+		default:
+			// Drop message if subscriber is not ready
+		}
+	}
+}

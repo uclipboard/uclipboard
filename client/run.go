@@ -13,7 +13,14 @@ func Run(c *model.UContext) {
 	adapter := adapter.GetAdapterFactory(c.Client.Adapter.Type)
 	clipboardAdapter := adapter(c)
 	client := NewUClipboardHttpClient(c)
-	mainLoop(c, clipboardAdapter, client)
+	switch c.Client.Connect.Type {
+	case "polling":
+		pollingMainLoop(c, clipboardAdapter, client)
+	case "persist":
+		persistMainLoop(c, clipboardAdapter, client)
+	default:
+		panic("unknown connect type: " + c.Client.Connect.Type)
+	}
 }
 
 func Instant(c *model.UContext) {

@@ -11,15 +11,7 @@ import (
 	"github.com/uclipboard/uclipboard/server/core"
 )
 
-const (
-	WSMsgTypeErr   = "error"
-	WSMsgTypeData  = "data"
-	WSMsgTypePush  = "push"
-	WSMsgTypePPush = "ppush"
-	WSMsgTypePull  = "pull"
-)
-
-func wsServerPingPong(uctx *model.UContext, wso *wsObject) {
+func wsServerPingPong(uctx *model.UContext, wso *model.WsObject) {
 	logger := model.NewModuleLogger("wsServerPing")
 	wso.SetPongHandler(func(string) error {
 		logger.Trace("Received pong message")
@@ -40,7 +32,7 @@ func wsServerPingPong(uctx *model.UContext, wso *wsObject) {
 	}
 }
 
-func wsServerProactivePush(uctx *model.UContext, wso *wsObject) {
+func wsServerProactivePush(uctx *model.UContext, wso *model.WsObject) {
 	logger := model.NewModuleLogger("wsServerPush")
 	sub := uctx.Runtime.ClipboardUpdateNotify.Subscribe()
 	defer uctx.Runtime.ClipboardUpdateNotify.Unsubscribe(sub)
@@ -63,7 +55,7 @@ func wsServerProactivePush(uctx *model.UContext, wso *wsObject) {
 			wso.ErrorMsg("Marshal clipboardData error: %v", err)
 			return
 		}
-		if err := wso.ResponseMsg(WSMsgTypePPush, "ok", data); err != nil {
+		if err := wso.ResponseMsg(model.WSMsgTypePPush, "ok", data); err != nil {
 			logger.Errorf("Failed to send response message: %v", err)
 			return
 		}
@@ -87,8 +79,9 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 			logger.Errorf("Failed to upgrade connection: %v", err)
 			return
 		}
-		wso := NewWsObject(ws)
+		wso := model.NewWsObject(ws)
 		defer wso.Close()
+
 		go wsServerPingPong(uctx, wso)
 
 		go wsServerProactivePush(uctx, wso)
@@ -118,7 +111,7 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 			}
 			logger.Debugf("Received message type: %v", wsMsg.Type)
 			switch wsMsg.Type {
-			case WSMsgTypePush:
+			case model.WSMsgTypePush:
 				clipboardData := model.NewClipboardWithDefault()
 				if err := json.Unmarshal(p, clipboardData); err != nil {
 					wso.ErrorMsg("Unmarshal clipboardData error: %v", err)
@@ -143,7 +136,7 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 				// 	logger.Errorf("Failed to send response message: %v", err)
 				// 	return
 				// }
-			case WSMsgTypePull:
+			case model.WSMsgTypePull:
 				// return the latest 1 clipboard data
 				clipboardArr, err := core.QueryLatestClipboardRecord(uctx.Server.Api.PullSize)
 				if err != nil {
@@ -156,7 +149,7 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 					return
 				}
 				// send the clipboard data to the client
-				if err := wso.ResponseMsg(WSMsgTypeData, "ok", clipboardsBytes); err != nil {
+				if err := wso.ResponseMsg(model.WSMsgTypeData, "ok", clipboardsBytes); err != nil {
 					logger.Errorf("Failed to send response message: %v", err)
 					return
 				}
