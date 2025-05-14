@@ -79,36 +79,6 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 			// do nothing
 		}
 		logger.Debugf("clipboard content changed: %s", currentClipboard)
-		// prev is used to compare the current clipboard content and prev content
-		// to avoid this situation: ppush -> copy -> local change -> paste -> push -> ppush
-		// if the current clipboard content is the same as the prev content,
-		// we don't need to send the websocket push
-		// if we don't do this, the websocket push will be sent after receiving the ppush message
-		// and the push will be sent again after handling the ppush message
-		// prev := cl.prev()
-		// get the clipboard content
-		// if err != nil {
-		// 	if err == adapter.ErrEmptyClipboard {
-		// 		logger.Debugf(`adapter.Paste error:%v, set empty string clipboard.`, err)
-		// 		currentClipboard = ""
-		// 	} else if err == adapter.ErrLockedClipboard {
-		// 		if lockedWarningCounter < 3 {
-		// 			logger.Info("clipboard is locked, skip push")
-		// 			lockedWarningCounter++
-		// 		} else {
-		// 			logger.Debugf("clipboard is locked, skip push, but the warning counter has reached the maximum value: %v", lockedWarningCounter)
-		// 		}
-		// 		continue
-		// 	} else if err == adapter.ErrClipboardDataTypeUnknown {
-		// 		logger.Debugf("the content type of clipboard is unrecgnized.")
-		// 		currentClipboard = ""
-		// 	} else {
-		// 		logger.Warnf("adapter.Paste error:%v", err)
-		// 		continue
-		// 	}
-
-		// }
-		// lockedWarningCounter = 0
 		if currentClipboard == "" {
 			logger.Debug("skip push detect because current clipboard is empty")
 			continue
@@ -155,8 +125,15 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 	for {
 		msgType, content, err := wso.ReadMessage()
 		if err != nil {
-			logger.Errorf("read message error: %v", err)
-			continue
+			if err = wso.ClientErrorHandle(err); err != nil {
+				logger.Errorf("read message error: %v", err)
+				continue
+			}
+			msgType, content, err = wso.ReadMessage()
+			if err != nil {
+				logger.Errorf("read message error after reconnect: %v", err)
+				continue
+			}
 		}
 		if msgType != websocket.TextMessage {
 			logger.Errorf("message type error: %v", msgType)

@@ -83,7 +83,7 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 			logger.Errorf("Failed to upgrade connection: %v", err)
 			return
 		}
-		wso := model.NewWsObject(ws)
+		wso := model.NewWsObject(ws, websocket.DefaultDialer, model.UrlWsApi(uctx))
 		defer wso.Close()
 
 		go wsServerPingPong(uctx, wso)
@@ -93,15 +93,10 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 		for {
 			msgType, p, err := wso.ReadMessage()
 			if err != nil {
-				if websocket.IsCloseError(err,
-					websocket.CloseNormalClosure, websocket.CloseGoingAway,
-					websocket.CloseNoStatusReceived, websocket.CloseServiceRestart,
-					websocket.CloseTryAgainLater) {
-					logger.Debug("Websocket closed.")
+				if err = wso.ServerErrorHandle(err); err != nil {
+					logger.Errorf("Failed to read message: %v", err)
 					return
 				}
-				logger.Errorf("Failed to read message: %v", err)
-				return
 			}
 			if msgType != websocket.TextMessage {
 				logger.Errorf("Invalid message type: %d", msgType)
