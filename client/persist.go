@@ -166,7 +166,8 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				logger.Warn("loop update notify channel is full, skip send")
 			}
 			logger.Debugf("update clipboard")
-			if err := cl.copy(data.Content); err != nil {
+			s := DetectAndConcatFileUrl(conf, &data)
+			if err := cl.copy(s); err != nil {
 				logger.Errorf("set clipboard data error: %v", err)
 				continue
 			}
@@ -185,7 +186,8 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				continue
 			}
 			theClipboard := data[0]
-			if err := cl.copy(theClipboard.Content); err != nil {
+			s := DetectAndConcatFileUrl(conf, &theClipboard)
+			if err := cl.copy(s); err != nil {
 				logger.Errorf("set clipboard data error: %v", err)
 				continue
 			}
