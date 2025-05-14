@@ -37,7 +37,7 @@ func HandlerPush(uctx *model.UContext) gin.HandlerFunc {
 			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("content is empty", nil))
 			return
 		}
-		if err := core.AddClipboardRecordAndNotify(uctx, clipboardData); err != nil {
+		if err := core.AddClipboardRecordAndNotify(uctx, &model.ClipboardExcludeWso{Cb: clipboardData}); err != nil {
 			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecordAndNotify error: %v", err)
 			return
 		}
@@ -127,7 +127,7 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 		newClipboardRecord.Hostname = hostname
 		newClipboardRecord.ContentType = "binary"
 		logger.Tracef("Upload binary file clipboard record: %v", newClipboardRecord)
-		if err := core.AddClipboardRecordAndNotify(uctx, newClipboardRecord); err != nil {
+		if err := core.AddClipboardRecordAndNotify(uctx, &model.ClipboardExcludeWso{Cb: newClipboardRecord}); err != nil {
 			core.ServerInternalErrorLogEcho(ctx, logger, "AddClipboardRecordAndNotify error: %v", err)
 			return
 		}

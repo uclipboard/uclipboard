@@ -21,11 +21,11 @@ func GenClipboardReqBody(c string) ([]byte, *model.Clipboard, error) {
 		reqData.Hostname = "uclipboard_client"
 	}
 
-	reqBody, err := json.Marshal(reqData)
+	reqByte, err := json.Marshal(reqData)
 	if err != nil {
 		return nil, nil, err
 	}
-	return reqBody, reqData, nil
+	return reqByte, reqData, nil
 }
 
 func SendPushReq(s string, client *http.Client, c *model.UContext) (*model.Clipboard, error) {

@@ -47,13 +47,14 @@ func ServerInternalErrorLogEcho(ctx *gin.Context, logger *logrus.Entry, msg stri
 	ctx.JSON(http.StatusInternalServerError, model.NewDefaultServeRes(msg, nil))
 }
 
-func AddClipboardRecordAndNotify(uctx *model.UContext, clipboardData *model.Clipboard) error {
+func AddClipboardRecordAndNotify(uctx *model.UContext, cbew *model.ClipboardExcludeWso) error {
+	clipboardData := cbew.Cb
 	logger := model.NewModuleLogger("AddClipboardRecordAndNotify")
 	logger.Tracef("before insert: %v", clipboardData)
 	if err := AddClipboardRecord(clipboardData); err != nil {
 		return err
 	}
 	logger.Tracef("after insert: %v", clipboardData)
-	uctx.Runtime.ClipboardUpdateNotify.Push(clipboardData)
+	uctx.Runtime.ClipboardUpdateNotify.Push(cbew)
 	return nil
 }

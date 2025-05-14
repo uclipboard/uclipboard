@@ -15,12 +15,26 @@ type Clipboard struct {
 	ContentType string `json:"content_type" db:"content_type"`
 }
 
+type ClipboardExcludeWso struct {
+	Cb  *Clipboard
+	Wso *WsObject
+}
+
 // even though the ServerResponse is used in response,
 // we still use type field in the struct to distinguish the message type
 // from the client
-type WSMessage struct {
+type WSResponseMessage struct {
 	Type string `json:"type"`
 	ServerResponse
+}
+
+type WSRequestPushMessage struct {
+	Type string `json:"type"`
+	Clipboard
+}
+
+type WSBaseMessage struct {
+	Type string `json:"type"`
 }
 
 func NewClipboardWithDefault() *Clipboard {

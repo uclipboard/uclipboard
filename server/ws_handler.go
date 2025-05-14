@@ -44,13 +44,17 @@ func wsServerProactivePush(uctx *model.UContext, wso *model.WsObject) {
 			return
 		}
 		logger.Debug("Received clipboard update notification")
-		clipboardData, ok := msg.(*model.Clipboard)
+		cew, ok := msg.(*model.ClipboardExcludeWso)
 		if !ok {
 			wso.ErrorMsg("Invalid message type from notify msgqueue")
 			return
 		}
+		if wso == cew.Wso {
+			logger.Debug("Skip the message from self")
+			continue
+		}
 		// push the clipboard data to the client
-		data, err := json.Marshal(clipboardData)
+		data, err := json.Marshal(cew.Cb)
 		if err != nil {
 			wso.ErrorMsg("Marshal clipboardData error: %v", err)
 			return
@@ -104,7 +108,7 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 				return
 			}
 			logger.Debugf("Received message: %v", string(p))
-			var wsMsg model.WSMessage
+			wsMsg := model.WSBaseMessage{}
 			if err := json.Unmarshal(p, &wsMsg); err != nil {
 				wso.ErrorMsg("Unmarshal wsMsg error: %v", err)
 				return
@@ -112,6 +116,7 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 			logger.Debugf("Received message type: %v", wsMsg.Type)
 			switch wsMsg.Type {
 			case model.WSMsgTypePush:
+				// WSRequestPushMessage
 				clipboardData := model.NewClipboardWithDefault()
 				if err := json.Unmarshal(p, clipboardData); err != nil {
 					wso.ErrorMsg("Unmarshal clipboardData error: %v", err)
@@ -128,16 +133,16 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 					wso.ErrorMsg("content is empty")
 					return
 				}
-				if err := core.AddClipboardRecordAndNotify(uctx, clipboardData); err != nil {
+				if err := core.AddClipboardRecordAndNotify(uctx, &model.ClipboardExcludeWso{Cb: clipboardData, Wso: wso}); err != nil {
 					wso.ErrorMsg("AddClipboardRecordAndNotify error: %v", err)
 					return
 				}
-				// if err := wso.ResponseMsg(WSMsgTypeData, "ok", nil); err != nil {
-				// 	logger.Errorf("Failed to send response message: %v", err)
-				// 	return
-				// }
+				if err := wso.ResponseMsg(model.WSMsgTypeData, "ok", nil); err != nil {
+					logger.Errorf("Failed to send response message: %v", err)
+					return
+				}
 			case model.WSMsgTypePull:
-				// return the latest 1 clipboard data
+				// pull request contains only the type field, it should be WSBaseMessage
 				clipboardArr, err := core.QueryLatestClipboardRecord(uctx.Server.Api.PullSize)
 				if err != nil {
 					wso.ErrorMsg("GetLatestClipboardRecord error: %v", err)

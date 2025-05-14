@@ -44,20 +44,24 @@ func (wso *WsObject) ErrorMsg(fmtstr string, args ...any) {
 }
 
 func (wso *WsObject) ResponseMsg(_type string, msg string, data []byte) error {
-	wsMsg := WSMessage{
+	wsMsg := WSResponseMessage{
 		Type: _type,
 		ServerResponse: ServerResponse{
 			Msg:  msg,
 			Data: data,
 		},
 	}
+	wso.WriteJSON(wsMsg)
+	wso.logger.Debugf("Sent message: %v", wsMsg)
+	return nil
+}
+
+func (wso *WsObject) WriteJSON(msg any) error {
 	wso.wlock.Lock()
 	defer wso.wlock.Unlock()
-
-	if err := wso.ws.WriteJSON(wsMsg); err != nil {
+	if err := wso.ws.WriteJSON(msg); err != nil {
 		return err
 	}
-	wso.logger.Debugf("Sent message: %v", wsMsg)
 	return nil
 }
 
