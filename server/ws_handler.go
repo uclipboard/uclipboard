@@ -83,7 +83,9 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 			logger.Errorf("Failed to upgrade connection: %v", err)
 			return
 		}
-		wso := model.NewWsObject(ws, websocket.DefaultDialer, model.UrlWsApi(uctx))
+		// we don't need to reconnect the websocket connection
+		// so those error handling arguments are not needed
+		wso := model.NewWsObject(ws, nil, "")
 		defer wso.Close()
 
 		go wsServerPingPong(uctx, wso)
