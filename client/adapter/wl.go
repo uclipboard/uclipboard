@@ -41,6 +41,10 @@ func (WL *WlClipboard) Paste() (string, error) {
 	return out.String(), nil
 }
 
+func (WL *WlClipboard) Watch(onChange func(string)) error {
+	return defaultWatch("wl-paste -n --watch %s", onChange)
+}
+
 func init() {
 	RegisterFactory("wl", func(_ *model.UContext) ClipboardCmdAdapter {
 		return &WlClipboard{}

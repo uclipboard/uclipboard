@@ -33,6 +33,11 @@ func (XC *XClipClipboard) Paste() (string, error) {
 	return out.String(), nil
 }
 
+func (XC *XClipClipboard) Watch(_ func(string)) error {
+	// xclip doesn't support watch
+	return ErrUnsupportedWatchMode
+}
+
 func init() {
 	RegisterFactory("xc", func(u *model.UContext) ClipboardCmdAdapter {
 		return &XClipClipboard{selection: u.Client.Adapter.XSelection}

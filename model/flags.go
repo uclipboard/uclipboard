@@ -25,5 +25,6 @@ func InitFlags(c *UContext) {
 	flag.BoolVar(&c.Runtime.Pull, "pull", false, "(instant mode) pull clipboard data.")
 	flag.BoolVar(&c.Runtime.Latest, "latest", false, "(instant mode) download latest file.")
 	flag.StringVar(&c.Runtime.UploadFileLifetimeStr, "lifetime", "", "(instant mode) specify the file lifetime. (support unit: s, m, h, d)")
+	flag.BoolVar(&c.Runtime.Nanos, "nanos", false, "(instant mode) use nanos format to wrap the stdin data and print it to stdout.")
 	flag.Parse()
 }

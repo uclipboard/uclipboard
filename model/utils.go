@@ -57,3 +57,11 @@ func ExDir() string {
 	}
 	return filepath.Dir(exPath)
 }
+
+func ExPath() string {
+	exPath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	return exPath
+}

@@ -66,6 +66,7 @@ type UContext struct {
 		ShowHelp              bool
 		UploadFileLifetime    int64
 		UploadFileLifetimeStr string
+		Nanos                 bool
 		ClipboardUpdateNotify *msgqueue.MsgQueue
 	}
 }

@@ -60,6 +60,10 @@ func (WC *WinClip) Paste() (string, error) {
 	return outStr, nil
 }
 
+func (WC *WinClip) Watch(f func(string)) error {
+	return defaultWatch("win-clip.exe paste -u -w %s", f)
+}
+
 func init() {
 	RegisterFactory("wc", func(_ *model.UContext) ClipboardCmdAdapter {
 		return &WinClip{}

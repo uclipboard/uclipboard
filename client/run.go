@@ -7,6 +7,7 @@ import (
 
 	"github.com/uclipboard/uclipboard/client/adapter"
 	"github.com/uclipboard/uclipboard/model"
+	"github.com/uclipboard/uclipboard/model/nanos"
 )
 
 func Run(c *model.UContext) {
@@ -24,8 +25,34 @@ func Run(c *model.UContext) {
 }
 
 func Instant(c *model.UContext) {
-	client := NewUClipboardHttpClient(c)
+	if c.Runtime.Nanos {
+		logger := model.NewModuleLogger("nanos")
+		// wrap the stdin data and print it to stdout
+		// read from stdin
+		in, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			logger.Fatalf("Read data from stdin error: %v", err)
+		}
+		if len(in) == 0 {
+			logger.Fatal("nothing readed")
+		} else if len(in) > c.ContentLengthLimit {
+			logger.Fatalf("stdin data size is too large, skip push")
+		}
+		// wrap the data
+		n, err := nanos.New(in)
+		if err != nil {
+			logger.Fatalf("wrap data error: %v", err)
+		}
+		// write to stdout
+		if err := n.Write(os.Stdout); err != nil {
+			logger.Fatalf("write data to stdout error: %v", err)
+		}
+		logger.Debugf("write data to stdout: %s", n.Data)
+		return
+	}
 	logger := model.NewModuleLogger("instant")
+
+	client := NewUClipboardHttpClient(c)
 	argMsg := c.Runtime.PushMsg
 	// priority: binary file > pull data > argument message > stdin
 

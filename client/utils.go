@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/uclipboard/uclipboard/model"
 )
 
@@ -66,6 +67,37 @@ func SendPullReq(client *http.Client, c *model.UContext) ([]byte, error) {
 	}
 
 	return body, err
+}
+
+func SendWebSocketPush(s string, wso *model.WsObject) (*model.Clipboard, error) {
+	_, clipboardInstance, err := GenClipboardReqBody(s)
+	if err != nil {
+		return nil, err
+	}
+	wsMsg := model.WSRequestPushMessage{
+		Type:      model.WSMsgTypePush,
+		Clipboard: *clipboardInstance,
+	}
+	if err := wso.WriteJSON(wsMsg); err != nil {
+		return nil, err
+	}
+	return clipboardInstance, nil
+}
+
+func SendWebSocketPull(wso *model.WsObject) error {
+	wsMsg := model.WSBaseMessage{
+		Type: model.WSMsgTypePull,
+	}
+	return wso.WriteJSON(wsMsg)
+}
+
+func CreateWsConn(c *model.UContext) (*model.WsObject, error) {
+	wsApi := model.UrlWsApi(c)
+	conn, _, err := websocket.DefaultDialer.Dial(wsApi, nil)
+	if err != nil {
+		return nil, err
+	}
+	return model.NewWsObject(conn), nil
 }
 
 func NewUClipboardHttpClient(c *model.UContext) *http.Client {
