@@ -49,7 +49,7 @@ func clipboardLocalChangeWatchService(cl *clipboardLock, notify chan string) {
 	// this is a blocking call
 	// when the clipboard content changed, it will call the function
 	err := cl.watch(func(newContent string) {
-		logger.Debugf("clipboard content changed: %s", newContent)
+		logger.Debugf("Clipboard content changed, notifying")
 		// send the content to the channel
 		notify <- newContent
 	})
@@ -78,7 +78,7 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 		default:
 			// do nothing
 		}
-		logger.Debugf("clipboard content changed: %s", currentClipboard)
+		logger.Debugf("Receive clipboard content changed notify: %v", currentClipboard)
 		if currentClipboard == "" {
 			logger.Debug("skip push detect because current clipboard is empty")
 			continue
@@ -87,11 +87,7 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 			logger.Debug("current clipboard size is too large, skip push")
 			continue
 		}
-		// if prev == currentClipboard {
-		// 	logger.Debugf("clipboard content is the same as before, skip push")
-		// 	continue
-		// }
-		// send the clipboard content to the server
+
 		if _, err := SendWebSocketPush(currentClipboard, wso); err != nil {
 			logger.Errorf("send websocket push error: %v", err)
 			continue
@@ -157,7 +153,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				logger.Errorf("unmarshal message data error: %v", err)
 				continue
 			}
-			logger.Debugf("receive proactive push message: %v", data)
+			logger.Tracef("receive proactive push message: %v", data)
 			// notify the local change worker
 			select {
 			case loopUpdateNotify <- 'U':
@@ -165,7 +161,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 			default:
 				logger.Warn("loop update notify channel is full, skip send")
 			}
-			logger.Debugf("update clipboard")
+			logger.Debugf("update ppush local clipboard %v", data.Content)
 			s := DetectAndConcatFileUrl(conf, &data)
 			if err := cl.copy(s); err != nil {
 				logger.Errorf("set clipboard data error: %v", err)
@@ -179,7 +175,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				logger.Errorf("unmarshal message data error: %v", err)
 				continue
 			}
-			logger.Debugf("receive data message: %v", data)
+			logger.Tracef("receive data message: %v", data)
 			// get the latest clipboard content
 			if len(data) == 0 {
 				logger.Debug("no clipboard data")
@@ -192,7 +188,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				continue
 			}
 			if initWorkers {
-				logger.Debugf("init clipboard content: %s", theClipboard.Content)
+				logger.Tracef("init clipboard content: %s", theClipboard.Content)
 				logger.Debugf("start clipboard local change worker for the first time")
 				go clipboardLocalChangeService(conf, cl, wso, loopUpdateNotify)
 				initWorkers = false
