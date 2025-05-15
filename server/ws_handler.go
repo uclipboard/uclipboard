@@ -13,10 +13,7 @@ import (
 
 func wsServerPingPong(uctx *model.UContext, wso *model.WsObject) {
 	logger := model.NewModuleLogger("wsServerPing")
-	wso.SetPongHandler(func(string) error {
-		logger.Trace("Received pong message")
-		return nil
-	})
+	wso.InitServerPongHandler()
 	logger.Debugf("ws ping interval: %dms", uctx.Server.Api.PingInterval)
 	for {
 		time.Sleep(time.Duration(uctx.Server.Api.PingInterval) * time.Millisecond)
@@ -85,7 +82,7 @@ func HandlerWebSocket(uctx *model.UContext) gin.HandlerFunc {
 		}
 		// we don't need to reconnect the websocket connection
 		// so those error handling arguments are not needed
-		wso := model.NewWsObject(ws, nil, "")
+		wso := model.NewWsObjectServer(ws)
 		defer wso.Close()
 
 		go wsServerPingPong(uctx, wso)

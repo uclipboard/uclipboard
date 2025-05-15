@@ -5,7 +5,6 @@ import (
 	"io"
 )
 
-// Hdr 结构体定义
 type Hdr struct {
 	FullSz uint32
 	HdrSz  uint16
@@ -18,7 +17,6 @@ type NanoS struct {
 
 func Load(r io.Reader) (*NanoS, error) {
 	var s NanoS
-	// 读取 FullSz 和 HdrSz
 	if err := binary.Read(r, binary.BigEndian, &s.FullSz); err != nil {
 		return nil, err
 	}

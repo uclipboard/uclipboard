@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/uclipboard/uclipboard/client/adapter"
@@ -106,7 +107,8 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 		return
 	}
 	defer wso.Close()
-
+	timeout := time.Duration(conf.Client.Connect.Timeout) * time.Millisecond
+	wso.InitClientPingHandler(timeout)
 	cl := newClipboardLock(theAdapter)
 
 	// send the pull request to the server
@@ -125,6 +127,12 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				logger.Errorf("read message error: %v", err)
 				continue
 			}
+			logger.Debug("send pull request to sync the data after reconnect")
+			if err := SendWebSocketPull(wso); err != nil {
+				logger.Errorf("Failed to send pull request after reconnect: %v", err)
+				continue
+			}
+
 			msgType, content, err = wso.ReadMessage()
 			if err != nil {
 				logger.Errorf("read message error after reconnect: %v", err)
@@ -192,6 +200,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				logger.Debugf("start clipboard local change worker for the first time")
 				go clipboardLocalChangeService(conf, cl, wso, loopUpdateNotify)
 				initWorkers = false
+				logger.Info("start clipboard init workers success")
 			} else {
 				// we got clipboard synchronize data response, to avoid the local change worker to send the same data to server
 				select {

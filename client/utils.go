@@ -97,7 +97,7 @@ func CreateWsConn(c *model.UContext) (*model.WsObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.NewWsObject(conn, websocket.DefaultDialer, wsApi), nil
+	return model.NewWsObject(conn, websocket.DefaultDialer, wsApi, time.Duration(c.Client.Connect.Timeout)*time.Millisecond), nil
 }
 
 func NewUClipboardHttpClient(c *model.UContext) *http.Client {

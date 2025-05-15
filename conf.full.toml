@@ -5,7 +5,11 @@ content_length_limit = 51200 # B. Maximum clipboard content size in bytes.
 url = "http://example.com:4533/" # Required. Server URL.
 type = "polling" # Connection mode: "polling" or "persist". Only X11/xsel does not support "persist".
 interval = 1000 # ms. Polling interval in "polling" mode.
-timeout = 10000 # ms. HTTP client timeout in "polling" mode. If 0, uses default (waits indefinitely).
+
+timeout = 10000 # ms. Connection timeout. If set to 0, waits indefinitely in "polling" mode.
+# For "persist" mode, consider lowering this value (e.g., 6000) for faster read timeouts.
+# In "persist" mode, this should be greater than server.api.ping_interval to avoid unexpected connection closures.
+
 upload_timeout = 300 # s. Timeout for file uploads.
 
 [client.adapter]

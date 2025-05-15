@@ -29,25 +29,30 @@ var (
 )
 
 type WsObject struct {
-	ws     *websocket.Conn
-	api    string // used for reconnecting
-	dialer *websocket.Dialer
-	wlock  sync.Mutex
-	rlock  sync.Mutex
-	logger *logrus.Entry
+	ws          *websocket.Conn
+	api         string // used for reconnecting
+	dialer      *websocket.Dialer
+	wlock       sync.Mutex
+	rlock       sync.Mutex
+	logger      *logrus.Entry
+	readTimeout time.Duration // used ffor reset read timeout
 }
 
-func NewWsObject(ws *websocket.Conn, dialer *websocket.Dialer, wsApi string) *WsObject {
+func NewWsObject(ws *websocket.Conn, dialer *websocket.Dialer, wsApi string, readTimeout time.Duration) *WsObject {
 	return &WsObject{
-		ws:     ws,
-		api:    wsApi,
-		dialer: dialer,
-		wlock:  sync.Mutex{},
-		rlock:  sync.Mutex{},
-		logger: NewModuleLogger("wsObject"),
+		ws:          ws,
+		api:         wsApi,
+		dialer:      dialer,
+		readTimeout: readTimeout,
+		wlock:       sync.Mutex{},
+		rlock:       sync.Mutex{},
+		logger:      NewModuleLogger("wsObject"),
 	}
 }
 
+func NewWsObjectServer(ws *websocket.Conn) *WsObject {
+	return NewWsObject(ws, nil, "", 0)
+}
 func (wso *WsObject) ErrorMsg(fmtstr string, args ...any) {
 	wso.logger.Errorf(fmtstr, args...)
 	// format the error message with args
@@ -111,10 +116,6 @@ func (wso *WsObject) WritePing() error {
 		return err
 	}
 	return nil
-}
-
-func (wso *WsObject) SetPongHandler(f func(string) error) {
-	wso.ws.SetPongHandler(f)
 }
 
 func (wso *WsObject) Reconnect() error {
@@ -217,6 +218,28 @@ func isRecoverableError(err error, logger *logrus.Entry) bool {
 	return false
 }
 
+func (wso *WsObject) InitClientPingHandler(timeout time.Duration) error {
+	wso.logger.Debugf("set first time read timout %v", timeout)
+	if err := wso.ws.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+		return err
+	}
+	wso.ws.SetPingHandler(func(string) error {
+		wso.logger.Trace("Received ping message, set read deadline")
+		if err := wso.ws.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+			return err
+		}
+		return nil
+	})
+	return nil
+}
+
+func (wso *WsObject) InitServerPongHandler() {
+	wso.ws.SetPongHandler(func(string) error {
+		wso.logger.Trace("Received pong message")
+		return nil
+	})
+}
+
 // use a very simple strategy to handle the error
 // reconnect until successful
 // that means when this function returns, the connection is always ok
@@ -241,16 +264,22 @@ func (wso *WsObject) ClientErrorHandle(originalError error) error {
 			return nil
 		}
 	} else {
-		reconnectFunc = wso.Reconnect
+		reconnectFunc = func() error {
+			if err := wso.Reconnect(); err != nil {
+				return err
+			}
+
+			return wso.InitClientPingHandler(wso.readTimeout)
+		}
 	}
 
 	for i := 0; ; i++ {
-		wso.logger.Infof("Reconnect attempt %d. Waiting for %v before trying. Previous error: %v", i+1, currentDelay, lastAttemptErr)
+		wso.logger.Debugf("Reconnect attempt %d. Waiting for %v before trying. Previous error: %v", i+1, currentDelay, lastAttemptErr)
 		time.Sleep(currentDelay)
 
 		if reconnErr := reconnectFunc(); reconnErr != nil {
 			lastAttemptErr = reconnErr
-			wso.logger.Errorf("Reconnect attempt %d failed: %v", i, reconnErr)
+			wso.logger.Debugf("Reconnect attempt %d failed: %v", i, reconnErr)
 
 			currentDelay *= 2
 			if currentDelay > maxReconnectDelay {
