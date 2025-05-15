@@ -106,6 +106,9 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 		logger.Errorf("create ws connection error: %v", err)
 		return
 	}
+
+	logger.Info("Successfully connected to server.")
+
 	defer wso.Close()
 	timeout := time.Duration(conf.Client.Connect.Timeout) * time.Millisecond
 	wso.InitClientPingHandler(timeout)
@@ -200,7 +203,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				logger.Debugf("start clipboard local change worker for the first time")
 				go clipboardLocalChangeService(conf, cl, wso, loopUpdateNotify)
 				initWorkers = false
-				logger.Info("start clipboard init workers success")
+				logger.Info("Successfully start all clipboard client workers")
 			} else {
 				// we got clipboard synchronize data response, to avoid the local change worker to send the same data to server
 				select {

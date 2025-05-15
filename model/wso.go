@@ -144,10 +144,10 @@ func (wso *WsObject) Reconnect() error {
 	}
 
 	// Phase 3: Dial new connection
-	wso.logger.Infof("Attempting to dial WebSocket server at %s for reconnect.", apiToDial)
+	wso.logger.Debugf("Attempting to dial WebSocket server at %s for reconnect.", apiToDial)
 	newws, _, err := wso.dialer.Dial(apiToDial, nil)
 	if err != nil {
-		wso.logger.Errorf("Failed to dial WebSocket server during reconnect: %v", err)
+		wso.logger.Debugf("Failed to dial WebSocket server during reconnect: %v", err)
 		return err // Dialing failed
 	}
 	wso.logger.Info("Successfully re-established WebSocket connection.")
@@ -251,7 +251,7 @@ func (wso *WsObject) ClientErrorHandle(originalError error) error {
 		return originalError
 	}
 
-	wso.logger.Infof("Error deemed recoverable. Initiating reconnection process for: %v", originalError)
+	wso.logger.Infof("Recoverable Error. Initiating reconnection process for: %v", originalError)
 
 	var lastAttemptErr error = originalError
 	currentDelay := initialReconnectDelay
