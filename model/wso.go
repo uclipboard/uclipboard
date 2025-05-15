@@ -24,6 +24,10 @@ const (
 	maxReconnectDelay     = 30 * time.Second
 )
 
+var (
+	ErrNetReconnecting = errors.New("network reconnecting")
+)
+
 type WsObject struct {
 	ws     *websocket.Conn
 	api    string // used for reconnecting
@@ -71,6 +75,13 @@ func (wso *WsObject) ResponseMsg(_type string, msg string, data []byte) error {
 func (wso *WsObject) WriteJSON(msg any) error {
 	wso.wlock.Lock()
 	defer wso.wlock.Unlock()
+	if wso.ws == nil {
+		// reconnecting connection
+		// current strategy is to ignore the error
+		// and just log it
+		wso.logger.Debugf("WebSocket connection is closed and trying to reconnect, cannot send message: %v", msg)
+		return nil
+	}
 	if err := wso.ws.WriteJSON(msg); err != nil {
 		return err
 	}
@@ -80,6 +91,11 @@ func (wso *WsObject) WriteJSON(msg any) error {
 func (wso *WsObject) ReadMessage() (msgType int, p []byte, err error) {
 	wso.rlock.Lock()
 	defer wso.rlock.Unlock()
+	if wso.ws == nil {
+		// connection closed
+		wso.logger.Debugf("WebSocket connection is closed and trying to reconnect, cannot read message")
+		return 0, nil, ErrNetReconnecting
+	}
 	msgType, p, err = wso.ws.ReadMessage()
 	return
 }
@@ -87,6 +103,10 @@ func (wso *WsObject) ReadMessage() (msgType int, p []byte, err error) {
 func (wso *WsObject) WritePing() error {
 	wso.wlock.Lock()
 	defer wso.wlock.Unlock()
+	if wso.ws == nil {
+		// connection closed
+		return net.ErrClosed
+	}
 	if err := wso.ws.WriteMessage(websocket.PingMessage, []byte("ping")); err != nil {
 		return err
 	}
@@ -189,7 +209,10 @@ func isRecoverableError(err error, logger *logrus.Entry) bool {
 		logger.Debugf("Error is a normal closure (e.g. NormalClosure, GoingAway), considered recoverable by reconnecting: %v", err)
 		return true
 	}
-
+	if errors.Is(err, ErrNetReconnecting) {
+		logger.Debugf("Error is ErrNetReconnecting, considered recoverable: %v", err)
+		return true
+	}
 	logger.Warnf("Error not explicitly classified as recoverable: %v (type: %T)", err, err)
 	return false
 }
@@ -209,12 +232,23 @@ func (wso *WsObject) ClientErrorHandle(originalError error) error {
 
 	var lastAttemptErr error = originalError
 	currentDelay := initialReconnectDelay
+	var reconnectFunc func() error
+	if originalError == ErrNetReconnecting {
+		reconnectFunc = func() error {
+			if wso.ws == nil {
+				return ErrNetReconnecting
+			}
+			return nil
+		}
+	} else {
+		reconnectFunc = wso.Reconnect
+	}
 
 	for i := 0; ; i++ {
 		wso.logger.Infof("Reconnect attempt %d. Waiting for %v before trying. Previous error: %v", i+1, currentDelay, lastAttemptErr)
 		time.Sleep(currentDelay)
 
-		if reconnErr := wso.Reconnect(); reconnErr != nil {
+		if reconnErr := reconnectFunc(); reconnErr != nil {
 			lastAttemptErr = reconnErr
 			wso.logger.Errorf("Reconnect attempt %d failed: %v", i, reconnErr)
 

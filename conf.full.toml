@@ -1,31 +1,30 @@
-token = "" #necessary, modify it for your security!
-content_length_limit = 51200 #B, the max size of a clipboard content
+token = "" # Required. Set your own token for security.
+content_length_limit = 51200 # B. Maximum clipboard content size in bytes.
 
 [client.connect]
-url = "http://example.com:4533/" #necessary
-type = "polling" # specify connect mode, "polling" or "persist"
-interval = 1000 #ms, the interval time in *polling* mode
-timeout = 10000 #ms, the timeout of http client in *polling* mode if 0, uclipboard will create a default (wait forever) client
-upload_timeout = 300 #s, the timeout of uploading file operation
-
+url = "http://example.com:4533/" # Required. Server URL.
+type = "polling" # Connection mode: "polling" or "persist". Only X11/xsel does not support "persist".
+interval = 1000 # ms. Polling interval in "polling" mode.
+timeout = 10000 # ms. HTTP client timeout in "polling" mode. If 0, uses default (waits indefinitely).
+upload_timeout = 300 # s. Timeout for file uploads.
 
 [client.adapter]
-type = "" #necessary, specify the adapter method, e.g. "xc" for xclip, "wc" for win-clip, "wl" for wl-clipboard, "pbm" for macos pbman, 
-X_selection = "clipboard" # select the clipboard which you want to copy/paste in xc adapter
+type = "" # Required. Adapter type: "xc" (xclip), "wc" (win-clip), "wl" (wl-clipboard), "pbm" (macOS pbman), etc.
+X_selection = "clipboard" # Clipboard selection for "xc" adapter.
 
 [server]
-timer_interval = 60 #seconds, the interval of rubbish cleaner timer
-access_log = false #print access log
+timer_interval = 60 # s. Interval for cleanup timer.
+access_log = false # Print access logs.
 
 [server.store]
-db_path = "./uclipboard.db" 
-tmp_path = "./tmp/" #temporary uploaded file path
-default_file_life = 300 #seconds, temporary uploaded file life
-max_clipboard_record_number = 0 # the max number of clipboard records, if 0, uclipboard don't remove outdated records
+db_path = "./uclipboard.db"
+tmp_path = "./tmp/" # Temporary file upload path.
+default_file_life = 300 # s. Lifetime of temporary uploaded files.
+max_clipboard_record_number = 0 # Maximum clipboard records. 0 means unlimited.
 
 [server.api]
-pull_size = 5 # the number of clipboard records to pull per request
-history_page_size = 20 # the number of clipboard records per page in history api
-port = 4533 
-cache_max_age = 2592000 #seconds, 30 days in default the max age of cache
-ping_interval = 5000 #ms, the interval time of server ping client operation in websocket api
+pull_size = 5 # Number of clipboard records per pull request.
+history_page_size = 20 # Number of records per page in history API.
+port = 4533
+cache_max_age = 2592000 # s. Cache max age (default: 30 days).
+ping_interval = 5000 # ms. Interval for server ping to client in WebSocket API.

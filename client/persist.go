@@ -161,7 +161,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 			default:
 				logger.Warn("loop update notify channel is full, skip send")
 			}
-			logger.Debugf("update ppush local clipboard %v", data.Content)
+			logger.Debugf("ppush update local clipboard %v", data.Content)
 			s := DetectAndConcatFileUrl(conf, &data)
 			if err := cl.copy(s); err != nil {
 				logger.Errorf("set clipboard data error: %v", err)
@@ -178,7 +178,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 			logger.Tracef("receive data message: %v", data)
 			// get the latest clipboard content
 			if len(data) == 0 {
-				logger.Debug("no clipboard data")
+				logger.Debugf("Receive message: %s", msg.Msg)
 				continue
 			}
 			theClipboard := data[0]
