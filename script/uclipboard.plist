@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+  <key>Label</key>
+  <string>uclipboard</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/uclipboard/uclipboard</string>
+    <string>--mode</string>
+    <string>client</string>
+    <string>--log</string>
+    <string>/opt/uclipboard/uclipboard.log</string>
+    <string>--log-level</string>
+    <string>info</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  </dict>
+</plist>
