@@ -14,6 +14,7 @@ import (
 // because there are 2 or more goroutines to access the clipboard in persist mode,
 // we need to use a mutex to lock the clipboard
 // to protect the clipboard
+// after architecture update, it is not necessary to use a mutex
 type clipboardLock struct {
 	lock    sync.Mutex
 	adapter adapter.ClipboardCmdAdapter
@@ -114,6 +115,8 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 	wso.InitClientPingHandler(timeout)
 	cl := newClipboardLock(theAdapter)
 
+	loopUpdateNotify := make(chan any, 20)
+
 	// send the pull request to the server
 	// then we can get the latest clipboard content in the
 	// case model.WSMsgTypeData
@@ -121,7 +124,6 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 		logger.Errorf("init clipboard error: %v", err)
 		return
 	}
-	loopUpdateNotify := make(chan any, 20)
 	initWorkers := true
 	for {
 		msgType, content, err := wso.ReadMessage()
@@ -165,18 +167,20 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				continue
 			}
 			logger.Tracef("receive proactive push message: %v", data)
+			logger.Debugf("ppush update local clipboard %v", data.Content)
+			s := DetectAndConcatFileUrl(conf, &data)
+			logger.Tracef("after detect and concat file url: %s", s)
+			if err := cl.copy(s); err != nil {
+				logger.Errorf("set clipboard data error: %v", err)
+				continue
+			}
+			logger.Debugf("set clipboard data success")
 			// notify the local change worker
 			select {
 			case loopUpdateNotify <- 'U':
 				logger.Debugf("send loop update notify")
 			default:
 				logger.Warn("loop update notify channel is full, skip send")
-			}
-			logger.Debugf("ppush update local clipboard %v", data.Content)
-			s := DetectAndConcatFileUrl(conf, &data)
-			if err := cl.copy(s); err != nil {
-				logger.Errorf("set clipboard data error: %v", err)
-				continue
 			}
 
 		case model.WSMsgTypeData:
@@ -205,7 +209,9 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				initWorkers = false
 				logger.Info("Successfully start all clipboard client workers")
 			} else {
-				// we got clipboard synchronize data response, to avoid the local change worker to send the same data to server
+				// we got clipboard synchronize data response.
+				// To avoid the local change worker to send the same data to server,
+				// send loopUpdateNotify message.
 				select {
 				case loopUpdateNotify <- 'U':
 					logger.Debugf("send loop update notify")

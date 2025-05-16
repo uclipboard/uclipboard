@@ -70,6 +70,9 @@ func defaultPaste(cmd string) func() (string, error) {
 	}
 }
 
+// replace the %s with "/path/to/uclipboard --nanos" then neighborExec
+// load the content from the command's stdout and parse as nanos message to draw the content
+// then call the onChange function with the content
 func defaultWatch(cmd string, onChange func(string)) error {
 	cmd = fmt.Sprintf(cmd, model.ExPath()+" --nanos")
 	execCmd := neighborExec(cmd)

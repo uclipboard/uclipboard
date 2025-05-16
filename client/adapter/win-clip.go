@@ -61,7 +61,11 @@ func (WC *WinClip) Paste() (string, error) {
 }
 
 func (WC *WinClip) Watch(f func(string)) error {
-	return defaultWatch("win-clip.exe paste -u -w %s", f)
+	newlineReplaceWrapper := func(s string) {
+		s = strings.ReplaceAll(s, "\r\n", "\n")
+		f(s)
+	}
+	return defaultWatch("win-clip.exe paste -u -w %s", newlineReplaceWrapper)
 }
 
 func init() {

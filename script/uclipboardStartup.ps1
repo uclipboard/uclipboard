@@ -20,7 +20,7 @@ if ($ucipboardDirectory -eq "") {
 
 $uclipboardExecutablePath = Join-Path -Path $ucipboardDirectory -ChildPath "uclipboard.exe"
 $uclipboardLogPath = Join-Path -Path $ucipboardDirectory -ChildPath "uclipboard.log"
-$uclipboardArguments = "--mode client --log $uclipboardLogPath --log-level debug"
+$uclipboardArguments = "--mode client --log $uclipboardLogPath --log-level info"
 
 
 if (-not (Get-Process "uclipboard" -ErrorAction SilentlyContinue)) {

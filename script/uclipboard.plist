@@ -2,8 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
+
   <key>Label</key>
-  <string>uclipboard</string>
+  <string>gugugu.cloud.uclipboard</string>
+
   <key>ProgramArguments</key>
   <array>
     <string>/opt/uclipboard/uclipboard</string>
@@ -14,7 +16,23 @@
     <string>--log-level</string>
     <string>info</string>
   </array>
+
   <key>RunAtLoad</key>
   <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>NetworkState</key>
+    <true/>
+  </dict>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+      <key>LANG</key>
+      <string>en_US.UTF-8</string>
+      <key>LC_ALL</key>
+      <string>en_US.UTF-8</string>
+  </dict>
+
   </dict>
 </plist>
