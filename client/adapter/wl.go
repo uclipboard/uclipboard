@@ -42,7 +42,18 @@ func (WL *WlClipboard) Paste() (string, error) {
 }
 
 func (WL *WlClipboard) Watch(onChange func(string)) error {
-	return defaultWatch("wl-paste -n --watch %s", onChange)
+	firstTime := true
+	logger := model.NewModuleLogger("WlWatch")
+	return defaultWatch("wl-paste -n --watch %s", func(s string) {
+		if firstTime {
+			// when the wl-paste -n start, it will print the current clipboard content
+			// so we need to ignore the first time
+			firstTime = false
+			logger.Debugf("ignore first time %s", s)
+			return
+		}
+		onChange(s)
+	})
 }
 
 func init() {
