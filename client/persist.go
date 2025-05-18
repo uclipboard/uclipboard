@@ -67,34 +67,49 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 	// create a updateNotify channel
 	updateNotify := make(chan string, 20)
 	go clipboardLocalChangeWatchService(cl, updateNotify)
-	// lockedWarningCounter := 0
+	prevContext := ""
 	for {
-		// wait for the clipboard content changed
-		// this will block until the clipboard content changed
-		currentClipboard := <-updateNotify
-		// if there are any data in the loopNotify channel, we just continue
-		select {
-		case <-loopUpdateNotify:
-			logger.Debugf("receive loop notify, that's means same clipboard notify, skip clipboard local change")
-			continue
-		default:
-			// do nothing
-		}
-		logger.Debugf("Receive clipboard content changed notify: %v", currentClipboard)
-		if currentClipboard == "" {
-			logger.Debug("skip push detect because current clipboard is empty")
-			continue
-		}
-		if len(currentClipboard) > u.ContentLengthLimit {
-			logger.Debug("current clipboard size is too large, skip push")
-			continue
-		}
+		func() {
+			// wait for the clipboard content changed
+			// this will block until the clipboard content changed
+			currentClipboard := <-updateNotify
+			defer func() {
+				logger.Debugf("set prevContext to currentClipboard: %s", currentClipboard)
+				prevContext = currentClipboard
+			}()
+			// if there are any data in the loopNotify channel, we just return
+			select {
+			case <-loopUpdateNotify:
+				logger.Debugf("receive loop notify, that's means same clipboard notify, skip clipboard local change")
+				// we still need to update the prevContext
+				return
+			default:
+				// do nothing
+			}
+			// it is not recommended to put this before the select statement
+			// if we skip it, we can't consume the message
+			// and that may cause the channel to be full
+			if currentClipboard == prevContext {
+				logger.Debugf("current clipboard is same as previous, skip push")
+				return
+			}
 
-		if _, err := SendWebSocketPush(currentClipboard, wso); err != nil {
-			logger.Errorf("send websocket push error: %v", err)
-			continue
-		}
-		logger.Debugf("send websocket push success")
+			logger.Debugf("Receive clipboard content changed notify: %v", currentClipboard)
+			if currentClipboard == "" {
+				logger.Debug("skip push detect because current clipboard is empty")
+				return
+			} else if len(currentClipboard) > u.ContentLengthLimit {
+				logger.Debug("current clipboard size is too large, skip push")
+				currentClipboard = currentClipboard[:u.ContentLengthLimit]
+				return
+			}
+
+			if _, err := SendWebSocketPush(currentClipboard, wso); err != nil {
+				logger.Errorf("send websocket push error: %v", err)
+				return
+			}
+			logger.Debugf("send websocket push success")
+		}()
 	}
 
 }
