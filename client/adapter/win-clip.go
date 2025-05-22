@@ -18,16 +18,54 @@ const (
 type WinClip struct {
 }
 
-func (WC *WinClip) Copy(s string) error {
-	s = strings.ReplaceAll(s, "\n", "\r\n")
-	return defaultCopy("win-clip.exe copy -u")(s)
+func (WC *WinClip) stderrStrHandle(stdErrStr string) error {
+	if stdErrStr == "" {
+		return nil
+	}
+	errCode, errString := WC.parseStdErr(stdErrStr)
+	switch errCode {
+	case ErrCodeClipboardEmpty:
+		return ErrEmptyClipboard
+	case ErrCodeAccessDenied:
+		return ErrLockedClipboard
+	case ErrCodeClipboardDataTypeUnknown:
+		return ErrClipboardDataTypeUnknown
+	}
+
+	if errString != "" {
+		return errors.New(errString)
+	}
+
+	return nil
 }
 
-func parseStdErr(stdErrStr string) (int, string) {
+func (WC *WinClip) parseStdErr(stdErrStr string) (int, string) {
 	errCode := 0
 	fmt.Sscanf(stdErrStr, "[%d]", &errCode)
 	errString := stdErrStr[strings.Index(stdErrStr, "]")+1:]
 	return errCode, errString
+}
+
+func (WC *WinClip) Copy(s string) error {
+	s = strings.ReplaceAll(s, "\n", "\r\n")
+
+	copyCmd := neighborExec("win-clip.exe copy -u")
+
+	stdErr := bytes.NewBuffer(nil)
+	copyCmd.Stderr = stdErr
+
+	copyCmd.Stdin = strings.NewReader(s)
+
+	if err := copyCmd.Run(); err != nil {
+		if errHandle := WC.stderrStrHandle(stdErr.String()); errHandle != nil {
+			return errHandle
+		}
+		// can't handle the error output, return raw error
+		return err
+	}
+
+	return nil
+
 }
 
 func (WC *WinClip) Paste() (string, error) {
@@ -36,24 +74,13 @@ func (WC *WinClip) Paste() (string, error) {
 	pasteCmd.Stdout = stdOut
 	stdErr := bytes.NewBuffer(nil)
 	pasteCmd.Stderr = stdErr
-	err := pasteCmd.Run()
-	if err != nil {
-		stdErrStr := stdErr.String()
-		errCode, errString := parseStdErr(stdErrStr)
-		switch errCode {
-		case ErrCodeClipboardEmpty:
-			return "", ErrEmptyClipboard
-		case ErrCodeAccessDenied:
-			return "", ErrLockedClipboard
-		case ErrCodeClipboardDataTypeUnknown:
-			return "", ErrClipboardDataTypeUnknown
-		default:
-			if errString != "" {
-				return "", errors.New(errString)
-			} else {
-				return "", err
-			}
+
+	if err := pasteCmd.Run(); err != nil {
+		if errHandle := WC.stderrStrHandle(stdErr.String()); errHandle != nil {
+			return "", errHandle
 		}
+		// can't handle the error output, return raw error
+		return "", err
 	}
 	outStr := stdOut.String()
 	outStr = strings.ReplaceAll(outStr, "\r\n", "\n")
