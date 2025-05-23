@@ -8,14 +8,15 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var seedSrc = rand.NewSource(time.Now().Unix())
 var randGen = rand.New(seedSrc)
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 func RandString(size int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	// Define the characters that can be used in the random string
 
 	// Create a byte slice to hold the random characters
@@ -64,4 +65,22 @@ func ExPath() string {
 		panic(err)
 	}
 	return exPath
+}
+
+func MaxLimitExpoGrowthAlgo(logger *logrus.Entry, initDelay, maxDelay time.Duration, F func() bool) {
+	currentDelay := initDelay
+	for i := 0; ; i++ {
+		logger.Debugf("MaxLimitExpoGrowthAlgo attempt %d. Waiting for %v before retrying.", i, currentDelay)
+
+		time.Sleep(currentDelay)
+
+		if !F() {
+			currentDelay *= 2
+			if currentDelay > maxDelay {
+				currentDelay = maxDelay
+			}
+		} else {
+			return
+		}
+	}
 }

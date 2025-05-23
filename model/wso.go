@@ -19,13 +19,12 @@ const (
 	WSMsgTypePPush = "ppush"
 	WSMsgTypePull  = "pull"
 
-	// Constants for reconnection strategy
-	initialReconnectDelay = 1 * time.Second
-	maxReconnectDelay     = 30 * time.Second
+	DefaultInitReconDelay = 1 * time.Second
+	DefaultMaxReconnDelay = 30 * time.Second
 )
 
 var (
-	ErrNetReconnecting = errors.New("network reconnecting")
+	ErrNetReconnecting = errors.New("waiting for network reconnecting")
 )
 
 type WsObject struct {
@@ -254,7 +253,6 @@ func (wso *WsObject) ClientErrorHandle(originalError error) error {
 	wso.logger.Infof("Recoverable Error. Initiating reconnection process for: %v", originalError)
 
 	var lastAttemptErr error = originalError
-	currentDelay := initialReconnectDelay
 	var reconnectFunc func() error
 	if originalError == ErrNetReconnecting {
 		reconnectFunc = func() error {
@@ -272,24 +270,16 @@ func (wso *WsObject) ClientErrorHandle(originalError error) error {
 			return wso.InitClientPingHandler(wso.readTimeout)
 		}
 	}
-
-	for i := 0; ; i++ {
-		wso.logger.Debugf("Reconnect attempt %d. Waiting for %v before trying. Previous error: %v", i+1, currentDelay, lastAttemptErr)
-		time.Sleep(currentDelay)
-
+	MaxLimitExpoGrowthAlgo(wso.logger, DefaultInitReconDelay, DefaultMaxReconnDelay, func() bool {
+		wso.logger.Debugf("Attempting to reconnect. Last error: %v", lastAttemptErr)
 		if reconnErr := reconnectFunc(); reconnErr != nil {
 			lastAttemptErr = reconnErr
-			wso.logger.Debugf("Reconnect attempt %d failed: %v", i, reconnErr)
-
-			currentDelay *= 2
-			if currentDelay > maxReconnectDelay {
-				currentDelay = maxReconnectDelay
-			}
-		} else {
-			break
+			wso.logger.Debugf("Reconnect attempt failed: %v", reconnErr)
+			return false
 		}
-
-	}
+		wso.logger.Debugf("Reconnect succeeded.")
+		return true // Reconnect successful
+	})
 	return nil
 }
 

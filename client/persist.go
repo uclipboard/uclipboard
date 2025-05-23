@@ -119,8 +119,18 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 	logger.Tracef("into persist mainLoop")
 	wso, err := CreateWsConn(conf)
 	if err != nil {
-		logger.Errorf("create ws connection error: %v", err)
-		return
+		logger.Errorf("create ws connection error: %v, try to re-connect and init again", err)
+		// we can't use the wso.ClientErrorHandle here
+		// because we don't have a wso yet
+		model.MaxLimitExpoGrowthAlgo(logger, model.DefaultInitReconDelay, model.DefaultMaxReconnDelay, func() bool {
+			wso, err = CreateWsConn(conf)
+			if err != nil {
+				logger.Errorf("re-create ws connection error: %v", err)
+				return false
+			}
+			logger.Debug("re-create ws connection success")
+			return true
+		})
 	}
 
 	logger.Info("Successfully connected to server.")
@@ -136,8 +146,10 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 	// then we can get the latest clipboard content in the
 	// case model.WSMsgTypeData
 	if err := SendWebSocketPull(wso); err != nil {
-		logger.Errorf("init clipboard error: %v", err)
-		return
+		if err = wso.ClientErrorHandle(err); err != nil {
+			logger.Errorf("read message error: %v", err)
+			return
+		}
 	}
 	initWorkers := true
 	for {
