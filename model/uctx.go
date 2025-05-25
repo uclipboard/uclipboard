@@ -51,23 +51,24 @@ type UContext struct {
 	} `toml:"server"`
 	// All struct should be read-only except runtime after LoadConf
 	Runtime struct {
-		Mode                  string
-		ConfPath              string
-		LogLevel              string
-		PushMsg               string
-		Download              string
-		Upload                string
-		Pull                  bool
-		Latest                bool
-		Test                  string
-		TokenEncrypt          string
-		ShowVersion           bool
-		LogPath               string
-		ShowHelp              bool
-		UploadFileLifetime    int64
-		UploadFileLifetimeStr string
-		Nanos                 bool
-		ClipboardUpdateNotify *msgqueue.MsgQueue
+		Mode                    string
+		ConfPath                string
+		LogLevel                string
+		PushMsg                 string
+		Download                string
+		Upload                  string
+		Pull                    bool
+		Latest                  bool
+		Test                    string
+		TokenEncrypt            string
+		ShowVersion             bool
+		LogPath                 string
+		ShowHelp                bool
+		UploadFileLifetime      int64
+		UploadFileLifetimeStr   string
+		Nanos                   bool
+		ClipboardUpdateNotify   *msgqueue.MsgQueue
+		ClipboardCurrentContent string
 	}
 }
 

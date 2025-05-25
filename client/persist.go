@@ -67,15 +67,14 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 	// create a updateNotify channel
 	updateNotify := make(chan string, 20)
 	go clipboardLocalChangeWatchService(cl, updateNotify)
-	prevContext := ""
 	for {
 		func() {
 			// wait for the clipboard content changed
 			// this will block until the clipboard content changed
-			currentClipboard := <-updateNotify
+			updateCurrent := <-updateNotify
 			defer func() {
-				logger.Debugf("set prevContext to currentClipboard: %s", currentClipboard)
-				prevContext = currentClipboard
+				logger.Debugf("set prevContext to currentClipboard: %s", updateCurrent)
+				u.Runtime.ClipboardCurrentContent = updateCurrent
 			}()
 			// if there are any data in the loopNotify channel, we just return
 			select {
@@ -89,22 +88,22 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 			// it is not recommended to put this before the select statement
 			// if we skip it, we can't consume the message
 			// and that may cause the channel to be full
-			if currentClipboard == prevContext {
+			if updateCurrent == u.Runtime.ClipboardCurrentContent {
 				logger.Debugf("current clipboard is same as previous, skip push")
 				return
 			}
 
-			logger.Debugf("Receive clipboard content changed notify: %v", currentClipboard)
-			if currentClipboard == "" {
+			logger.Debugf("Receive clipboard content changed notify: %v", updateCurrent)
+			if updateCurrent == "" {
 				logger.Debug("skip push detect because current clipboard is empty")
 				return
-			} else if len(currentClipboard) > u.ContentLengthLimit {
+			} else if len(updateCurrent) > u.ContentLengthLimit {
 				logger.Debug("current clipboard size is too large, skip push")
-				currentClipboard = currentClipboard[:u.ContentLengthLimit]
+				updateCurrent = updateCurrent[:u.ContentLengthLimit]
 				return
 			}
 
-			if _, err := SendWebSocketPush(currentClipboard, wso); err != nil {
+			if _, err := SendWebSocketPush(updateCurrent, wso); err != nil {
 				logger.Errorf("send websocket push error: %v", err)
 				return
 			}
@@ -141,6 +140,13 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 	cl := newClipboardLock(theAdapter)
 
 	loopUpdateNotify := make(chan any, 20)
+
+	pasteContent, err := cl.paste()
+	if err != nil {
+		logger.Errorf("get clipboard content error at startup, skip this operation: %v", err)
+	}
+	logger.Debugf("set clipboard content buffer at startup: %v", pasteContent)
+	conf.Runtime.ClipboardCurrentContent = pasteContent
 
 	// send the pull request to the server
 	// then we can get the latest clipboard content in the
@@ -197,6 +203,10 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 			logger.Debugf("ppush update local clipboard %v", data.Content)
 			s := DetectAndConcatFileUrl(conf, &data)
 			logger.Tracef("after detect and concat file url: %s", s)
+			if s == conf.Runtime.ClipboardCurrentContent {
+				logger.Debugf("current clipboard is same as previous when receiving ppush message, skip copy")
+				continue
+			}
 			if err := cl.copy(s); err != nil {
 				logger.Errorf("set clipboard data error: %v", err)
 				continue
@@ -225,12 +235,22 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 			}
 			theClipboard := data[0]
 			s := DetectAndConcatFileUrl(conf, &theClipboard)
+			if s == conf.Runtime.ClipboardCurrentContent {
+				logger.Debugf("current clipboard is same as previous when receiving data message, skip copy")
+				if initWorkers {
+					logger.Debugf("start clipboard local change worker for the first time with same clipboard")
+					go clipboardLocalChangeService(conf, cl, wso, loopUpdateNotify)
+					initWorkers = false
+					logger.Info("Successfully start all clipboard client workers")
+				}
+				continue
+			}
 			if err := cl.copy(s); err != nil {
 				logger.Errorf("set clipboard data error: %v", err)
 				continue
 			}
 			if initWorkers {
-				logger.Tracef("init clipboard content: %s", theClipboard.Content)
+				logger.Tracef("init clipboard content: %v", s)
 				logger.Debugf("start clipboard local change worker for the first time")
 				go clipboardLocalChangeService(conf, cl, wso, loopUpdateNotify)
 				initWorkers = false
