@@ -7,31 +7,45 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
-var seedSrc = rand.NewSource(time.Now().Unix())
-var randGen = rand.New(seedSrc)
+var (
+	randSeedSrc = rand.NewSource(time.Now().Unix())
+	randGen     = rand.New(randSeedSrc)
+	randMutex   = sync.Mutex{}
+)
 
-func RandString(size int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	// Define the characters that can be used in the random string
+func RandDecIntString(size int) string {
+	randMutex.Lock()
+	defer randMutex.Unlock()
+	var sb strings.Builder
+	sb.Grow(size) // Pre-allocate memory to avoid reallocations
 
-	// Create a byte slice to hold the random characters
-	randomBytes := make([]byte, size)
-
-	// Fill the byte slice with random characters from the charset
-	for i := range randomBytes {
-		randomBytes[i] = charset[randGen.Intn(len(charset))]
+	for i := 0; i < size; i++ {
+		sb.WriteByte(byte(randGen.Intn(10) + '0'))
 	}
 
-	// Convert the byte slice to a string
-	randomString := string(randomBytes)
+	return sb.String()
+}
 
-	// Print the random string
-	return randomString
+func RandString(size int) string {
+	randMutex.Lock()
+	defer randMutex.Unlock()
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	var sb strings.Builder
+	sb.Grow(size) // Pre-allocate memory to avoid reallocations
+
+	for i := 0; i < size; i++ {
+		sb.WriteByte(charset[randGen.Intn(len(charset))])
+	}
+
+	return sb.String()
 }
 
 func GetMD5Hash(text string) string {

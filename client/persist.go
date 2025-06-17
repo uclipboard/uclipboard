@@ -51,7 +51,7 @@ func clipboardLocalChangeWatchService(cl *clipboardLock, notify chan string) {
 	// this is a blocking call
 	// when the clipboard content changed, it will call the function
 	err := cl.watch(func(newContent string) {
-		logger.Debugf("Clipboard content changed, notifying")
+		logger.Debug("Clipboard content changed, notifying")
 		// send the content to the channel
 		notify <- newContent
 	})
@@ -62,7 +62,7 @@ func clipboardLocalChangeWatchService(cl *clipboardLock, notify chan string) {
 
 }
 
-func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *model.WsObject, loopUpdateNotify chan any) {
+func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *model.WsObject, loopUpdateNotify chan string) {
 	logger := model.NewModuleLogger("clipboardLocalChangeWatcher")
 	// create a updateNotify channel
 	updateNotify := make(chan string, 20)
@@ -76,20 +76,29 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 				logger.Debugf("set prevContext to currentClipboard: %s", updateCurrent)
 				u.Runtime.ClipboardCurrentContent = updateCurrent
 			}()
-			// if there are any data in the loopNotify channel, we just return
-			select {
-			case <-loopUpdateNotify:
-				logger.Debugf("receive loop notify, that's means same clipboard notify, skip clipboard local change")
-				// we still need to update the prevContext
-				return
-			default:
-				// do nothing
+			// Consume the loopUpdateNotify channel is to avoid the local change worker
+			// detects the same clipboard content change which is proactively pushed by the server.
+			// Consume the loopUpdateNotify channel until it is empty or the message is the same as updateCurrent,
+			// this is to avoid the local change worker lose some clipboard content update but the server has already proactively pushed
+		consumeLoop:
+			for {
+				select {
+				case notifyMsg := <-loopUpdateNotify:
+					if notifyMsg == updateCurrent {
+						logger.Debugf("same clipboard notify: %s, skip local change", notifyMsg)
+						return
+					}
+					logger.Warnf("unexpected different notify message received: %s, keep consuming...", notifyMsg)
+				default:
+					logger.Debug("no more messages to consume, stopping consume loop")
+					break consumeLoop
+				}
 			}
 			// it is not recommended to put this before the select statement
 			// if we skip it, we can't consume the message
 			// and that may cause the channel to be full
 			if updateCurrent == u.Runtime.ClipboardCurrentContent {
-				logger.Debugf("current clipboard is same as previous, skip push")
+				logger.Debug("current clipboard is same as previous, skip push")
 				return
 			}
 
@@ -139,7 +148,7 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 	wso.InitClientPingHandler(timeout)
 	cl := newClipboardLock(theAdapter)
 
-	loopUpdateNotify := make(chan any, 20)
+	loopUpdateNotify := make(chan string, 20)
 
 	pasteContent, err := cl.paste()
 	if err != nil {
@@ -214,8 +223,8 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 			logger.Debugf("set clipboard data success")
 			// notify the local change worker
 			select {
-			case loopUpdateNotify <- 'U':
-				logger.Debugf("send loop update notify")
+			case loopUpdateNotify <- s:
+				logger.Debugf("send loop update notify with content: %s", s)
 			default:
 				logger.Warn("loop update notify channel is full, skip send")
 			}
@@ -260,8 +269,8 @@ func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapte
 				// To avoid the local change worker to send the same data to server,
 				// send loopUpdateNotify message.
 				select {
-				case loopUpdateNotify <- 'U':
-					logger.Debugf("send loop update notify")
+				case loopUpdateNotify <- s:
+					logger.Debugf("send loop update notify with content: %s", s)
 				default:
 					logger.Warn("loop update notify channel is full, skip send")
 				}
