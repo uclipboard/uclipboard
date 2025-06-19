@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io" // Added for io.EOF, io.ErrUnexpectedEOF
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -31,13 +32,14 @@ type WsObject struct {
 	ws          *websocket.Conn
 	api         string // used for reconnecting
 	dialer      *websocket.Dialer
+	header      http.Header // used for reconnecting
 	wlock       sync.Mutex
 	rlock       sync.Mutex
 	logger      *logrus.Entry
 	readTimeout time.Duration // used ffor reset read timeout
 }
 
-func NewWsObject(ws *websocket.Conn, dialer *websocket.Dialer, wsApi string, readTimeout time.Duration) *WsObject {
+func NewWsObject(ws *websocket.Conn, dialer *websocket.Dialer, wsApi string, readTimeout time.Duration, header http.Header) *WsObject {
 	return &WsObject{
 		ws:          ws,
 		api:         wsApi,
@@ -45,12 +47,13 @@ func NewWsObject(ws *websocket.Conn, dialer *websocket.Dialer, wsApi string, rea
 		readTimeout: readTimeout,
 		wlock:       sync.Mutex{},
 		rlock:       sync.Mutex{},
+		header:      header,
 		logger:      NewModuleLogger("wsObject"),
 	}
 }
 
 func NewWsObjectServer(ws *websocket.Conn) *WsObject {
-	return NewWsObject(ws, nil, "", 0)
+	return NewWsObject(ws, nil, "", 0, nil)
 }
 func (wso *WsObject) ErrorMsg(fmtstr string, args ...any) {
 	wso.logger.Errorf(fmtstr, args...)
@@ -144,7 +147,7 @@ func (wso *WsObject) Reconnect() error {
 
 	// Phase 3: Dial new connection
 	wso.logger.Debugf("Attempting to dial WebSocket server at %s for reconnect.", apiToDial)
-	newws, _, err := wso.dialer.Dial(apiToDial, nil)
+	newws, _, err := wso.dialer.Dial(apiToDial, wso.header)
 	if err != nil {
 		wso.logger.Debugf("Failed to dial WebSocket server during reconnect: %v", err)
 		return err // Dialing failed
