@@ -149,7 +149,7 @@ func (ctx *loopContenxt) stageLocalDecision(currentClipboardContent string) (doP
 	ctx.logger.Tracef("currentClipboard %q[%v]\n", currentClipboardContent, []byte(currentClipboardContent))
 	if ctx.previousClipboard.Content != currentClipboardContent {
 		clipboardContentIfIsFile := DetectAndConcatFileUrl(ctx.uctx, &ctx.previousClipboard)
-		return ctx.previousClipboard.Content != clipboardContentIfIsFile
+		return currentClipboardContent != clipboardContentIfIsFile
 	}
 	return false
 }
