@@ -29,7 +29,7 @@ func GenClipboardReqBody(c string) ([]byte, *model.Clipboard, error) {
 	return reqByte, reqData, nil
 }
 
-func SendPushReq(s string, client *http.Client, c *model.UContext) (*model.Clipboard, error) {
+func SendPushReq(s string, client *HeaderHttpClient, c *model.UContext) (*model.Clipboard, error) {
 	reqBody, clipboardInstance, err := GenClipboardReqBody(s)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func SendPushReq(s string, client *http.Client, c *model.UContext) (*model.Clipb
 	return clipboardInstance, nil
 }
 
-func SendPullReq(client *http.Client, c *model.UContext) ([]byte, error) {
+func SendPullReq(client *HeaderHttpClient, c *model.UContext) ([]byte, error) {
 	pullApi := model.UrlPullApi(c)
 	resp, err := client.Get(pullApi)
 	if err != nil {
@@ -92,21 +92,27 @@ func SendWebSocketPull(wso *model.WsObject) error {
 }
 
 func CreateWsConn(c *model.UContext) (*model.WsObject, error) {
-	wsApi := model.UrlWsApi(c)
-	conn, _, err := websocket.DefaultDialer.Dial(wsApi, nil)
+	wsApi, header := model.UrlWsApi(c)
+	conn, _, err := websocket.DefaultDialer.Dial(wsApi, header)
 	if err != nil {
 		return nil, err
 	}
 	return model.NewWsObject(conn, websocket.DefaultDialer, wsApi, time.Duration(c.Client.Connect.Timeout)*time.Millisecond), nil
 }
 
-func NewUClipboardHttpClient(c *model.UContext) *http.Client {
+func NewUClipboardHttpClient(c *model.UContext) *HeaderHttpClient {
+	var client http.Client
 	if c.Runtime.Mode == "instant" {
-		return &http.Client{Timeout: time.Duration(c.Client.Connect.UploadTimeout) * time.Second}
+		client = http.Client{Timeout: time.Duration(c.Client.Connect.UploadTimeout) * time.Second}
+	} else {
+		client = http.Client{Timeout: time.Duration(c.Client.Connect.Timeout) * time.Millisecond}
 	}
-	// else
-	client := &http.Client{Timeout: time.Duration(c.Client.Connect.Timeout) * time.Millisecond}
-	return client
+	return &HeaderHttpClient{
+		Client: &client,
+		Header: http.Header{
+			"token": []string{c.Runtime.TokenEncrypt},
+		},
+	}
 }
 
 // if this clipboard content is a binary file, return the download url,
@@ -150,4 +156,40 @@ func ParseUploadInfomation(body []byte) (*model.FileMetadataResponse, error) {
 
 	return &info, nil
 
+}
+
+// HeaderHttpClient is a wrapper for http.Client with additional header support
+type HeaderHttpClient struct {
+	Client *http.Client
+	Header http.Header
+}
+
+func (c *HeaderHttpClient) Get(url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = c.Header
+	return c.Client.Do(req)
+}
+
+func (c *HeaderHttpClient) Do(req *http.Request) (*http.Response, error) {
+	// merge the custom headers with the request headers
+	for key, values := range c.Header {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
+
+	return c.Client.Do(req)
+}
+
+func (c *HeaderHttpClient) Post(url, contentType string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
+	req.Header = c.Header
+	return c.Client.Do(req)
 }

@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 )
 
@@ -19,15 +20,15 @@ const (
 )
 
 func UrlPushApi(c *UContext) string {
-	return fmt.Sprintf("%s/%s/%s/%s?token=%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Push, c.Runtime.TokenEncrypt)
+	return fmt.Sprintf("%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Push)
 }
 
 func UrlPullApi(c *UContext) string {
-	return fmt.Sprintf("%s/%s/%s/%s?token=%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Pull, c.Runtime.TokenEncrypt)
+	return fmt.Sprintf("%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Pull)
 }
 
 func UrlUploadApi(c *UContext) string {
-	str := fmt.Sprintf("%s/%s/%s/%s?token=%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Upload, c.Runtime.TokenEncrypt)
+	str := fmt.Sprintf("%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Upload)
 	if c.Runtime.UploadFileLifetime != 0 {
 		str += fmt.Sprintf("&lifetime=%d", c.Runtime.UploadFileLifetime)
 	}
@@ -35,10 +36,10 @@ func UrlUploadApi(c *UContext) string {
 }
 
 func UrlDownloadApi(c *UContext, fileName string) string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s?token=%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_DownloadPure, fileName, c.Runtime.TokenEncrypt)
+	return fmt.Sprintf("%s/%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_DownloadPure, fileName)
 }
 
-func UrlWsApi(c *UContext) string {
+func UrlWsApi(c *UContext) (string,http.Header) {
 	wsUrl := c.Client.Connect.Url
 	if strings.HasPrefix(wsUrl, "http://") {
 		wsUrl = strings.Replace(wsUrl, "http://", "ws://", 1)
@@ -47,5 +48,7 @@ func UrlWsApi(c *UContext) string {
 	} else {
 		panic("url must start with http:// or https://")
 	}
-	return fmt.Sprintf("%s/%s/%s/%s?token=%s", wsUrl, ApiPrefix, ApiVersion1, Api_WS, c.Runtime.TokenEncrypt)
+	return fmt.Sprintf("%s/%s/%s/%s", wsUrl, ApiPrefix, ApiVersion1, Api_WS), http.Header{
+		"token": []string{c.Runtime.TokenEncrypt},
+	}
 }

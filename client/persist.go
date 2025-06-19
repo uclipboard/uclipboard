@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"net/http"
 	"sync"
 	"time"
 
@@ -122,7 +121,7 @@ func clipboardLocalChangeService(u *model.UContext, cl *clipboardLock, wso *mode
 
 }
 
-func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, _ *http.Client) {
+func persistMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, _ *HeaderHttpClient) {
 	logger := model.NewModuleLogger("persist")
 	logger.Tracef("into persist mainLoop")
 	wso, err := CreateWsConn(conf)

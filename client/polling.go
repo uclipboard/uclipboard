@@ -1,7 +1,6 @@
 package client
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -11,7 +10,7 @@ import (
 
 type loopContenxt struct {
 	uctx                 *model.UContext
-	client               *http.Client
+	client               *HeaderHttpClient
 	adapter              adapter.ClipboardCmdAdapter
 	logger               *logrus.Entry
 	dynamicSleepTime     time.Duration
@@ -43,7 +42,7 @@ func (ctx *loopContenxt) stagePull() ([]byte, bool) {
 			// so I try to close ide connections and recreate a client
 			logger.Warn("reset client because of connection error")
 			logger.Debug("close idle connections")
-			ctx.client.CloseIdleConnections()
+			ctx.client.Client.CloseIdleConnections()
 			// it looks like that close idle connections is enough,
 			// but maybe it is better to recreate a new client
 			logger.Debug("create a new client")
@@ -104,10 +103,11 @@ func (ctx *loopContenxt) stagePaste() (string, bool) {
 	ctx.logger.Trace("into stagePaste")
 	currentClipboard, E := ctx.adapter.Paste()
 	if E != nil {
-		if E == adapter.ErrEmptyClipboard {
+		switch E {
+		case adapter.ErrEmptyClipboard:
 			ctx.logger.Debugf(`adapter.Paste error:%v, set empty string clipboard.`, E)
 			currentClipboard = ""
-		} else if E == adapter.ErrLockedClipboard {
+		case adapter.ErrLockedClipboard:
 			if ctx.lockedWarningCounter < 3 {
 				ctx.logger.Info("clipboard is locked, skip push")
 				ctx.lockedWarningCounter++
@@ -115,10 +115,10 @@ func (ctx *loopContenxt) stagePaste() (string, bool) {
 				ctx.logger.Debugf("clipboard is locked, skip push, but the warning counter has reached the maximum value: %v", ctx.lockedWarningCounter)
 			}
 			return "", false
-		} else if E == adapter.ErrClipboardDataTypeUnknown {
+		case adapter.ErrClipboardDataTypeUnknown:
 			ctx.logger.Debugf("the content type of clipboard is unrecgnized.")
 			currentClipboard = ""
-		} else {
+		default:
 			ctx.logger.Warnf("adapter.Paste error:%v", E)
 			return "", false
 		}
@@ -166,7 +166,7 @@ func (ctx *loopContenxt) stagePush(currentClipboard string) bool {
 	return true
 }
 
-func pollingMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, client *http.Client) {
+func pollingMainLoop(conf *model.UContext, theAdapter adapter.ClipboardCmdAdapter, client *HeaderHttpClient) {
 	logger := model.NewModuleLogger("loop")
 	logger.Tracef("into polling mainLoop")
 

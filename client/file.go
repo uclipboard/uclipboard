@@ -15,7 +15,7 @@ import (
 	"github.com/uclipboard/uclipboard/model"
 )
 
-func UploadFile(filePath string, client *http.Client, c *model.UContext, logger *logrus.Entry) {
+func UploadFile(filePath string, client *HeaderHttpClient, c *model.UContext, logger *logrus.Entry) {
 	logger.Trace("into UploadFile")
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -95,7 +95,7 @@ func parseContentDisposition(contentDisposition string) string {
 	return params["filename"]
 }
 
-func DownloadFile(requiredFileName string, client *http.Client, c *model.UContext, logger *logrus.Entry) {
+func DownloadFile(requiredFileName string, client *HeaderHttpClient, c *model.UContext, logger *logrus.Entry) {
 	logger.Trace("into DownloadFile")
 	logger.Tracef("fileId: %s", requiredFileName)
 	downloadUrl := model.UrlDownloadApi(c, requiredFileName)

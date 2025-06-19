@@ -51,8 +51,13 @@ func ginLoggerMiddleware() gin.HandlerFunc {
 }
 
 func ginAuthMiddleware(uctx *model.UContext) gin.HandlerFunc {
+	logger := model.NewModuleLogger("auth")
 	return func(ctx *gin.Context) {
 		token := ctx.Query("token")
+		if token == "" {
+			logger.Trace("No token in query, trying to get from header")
+			token = ctx.GetHeader("token")
+		}
 		if token == "" {
 			ctx.JSON(http.StatusUnauthorized, model.NewDefaultServeRes("unauthorized", nil))
 			ctx.Abort()
