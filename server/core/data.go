@@ -34,20 +34,20 @@ var (
 	`, clipboardTableName)
 	getLatestClipboard = fmt.Sprintf(`select * from %s
 	order by id desc limit `, clipboardTableName) + "%d"  //format limit N support
-
 	fileMetadataTableName = "file_metadata"
 	fileMetadataSchema    = fmt.Sprintf(`CREATE TABLE if not exists %s (
 		id integer primary key autoincrement,
 		created_ts bigint not null,
 		expire_ts bigint not null,
 		file_name varchar(128) not null,
-		tmp_path varchar(256) not null
+		tmp_path varchar(256) not null,
+		token varchar(64) not null
 		);
 	`, fileMetadataTableName)
 
 	insertFileMetadata = fmt.Sprintf(`insert into %s
-	(created_ts,expire_ts,file_name,tmp_path) values
-	(:created_ts,:expire_ts,:file_name,:tmp_path)
+	(created_ts,expire_ts,file_name,tmp_path,token) values
+	(:created_ts,:expire_ts,:file_name,:tmp_path,:token)
 	`, fileMetadataTableName)
 	deleteFileMetadataById = fmt.Sprintf(`delete from %s
 	where id = ?

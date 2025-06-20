@@ -78,6 +78,7 @@ type FileMetadata struct {
 	ExpireTs  int64  `json:"expire_ts" db:"expire_ts"`   //ms timestamp
 	FileName  string `json:"file_name" db:"file_name"`
 	TmpPath   string `json:"tmp_path" db:"tmp_path"` //relative path based on the tmpPath in conf
+	Token     string `json:"token" db:"token"`       // token for file access
 }
 
 func NewFileMetadataWithDefault() *FileMetadata {
@@ -90,6 +91,7 @@ type FileMetadataResponse struct {
 	Id       int64  `json:"file_id"`
 	Name     string `json:"file_name"`
 	LifeTime int64  `json:"life_time"` // seconds
+	Token    string `json:"token"`     // token for file access
 }
 
 type HistoryResponse struct {

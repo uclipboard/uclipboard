@@ -98,6 +98,7 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 		fileMetadata.FileName = file.Filename
 		fileMetadata.TmpPath = fmt.Sprintf("%s_%s", strconv.FormatInt(fileMetadata.CreatedTs, 10), file.Filename)
 		fileMetadata.ExpireTs = lifetimeSecs*1000 + fileMetadata.CreatedTs
+		fileMetadata.Token = model.RandString(16)
 		logger.Debugf("Upload file metadata is: %v", fileMetadata)
 
 		// save file to tmp directory and get the path to save in db
@@ -135,6 +136,7 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 			Id:       fileId,
 			Name:     fileMetadata.FileName,
 			LifeTime: lifetimeSecs,
+			Token:  fileMetadata.Token,
 		}
 		responseData, err := json.Marshal(fmr)
 		if err != nil {

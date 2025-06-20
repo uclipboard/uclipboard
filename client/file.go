@@ -82,8 +82,9 @@ func UploadFile(filePath string, client *HeaderHttpClient, c *model.UContext, lo
 		logger.Fatalf("parse upload response body error: %v", err)
 	}
 
-	fmt.Printf("upload file success, id: %v, name: %v, lifetime: %ss\n",
-		respData.Id, respData.Name, strconv.FormatFloat(float64(respData.LifeTime), 'f', -1, 64))
+	fmt.Printf("upload file success, id: %v, name: %v, lifetime: %ss, access token: %s\n",
+		respData.Id, respData.Name, strconv.FormatFloat(float64(respData.LifeTime), 'f', -1, 64),
+		respData.Token)
 
 }
 
