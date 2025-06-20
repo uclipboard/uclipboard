@@ -10,9 +10,8 @@ EXPOSE 4533
 
 RUN mkdir /data && chmod 777 /data
 
-COPY docker-entrypoint.sh /entrypoint.sh
-COPY ${BUILD_DIR}/uclipboard-${PLATFORM} ./uclipboard
-# in github action, the executable file is unzip from artifact, so need to add execute permission
-RUN chmod +x ./uclipboard /entrypoint.sh 
+COPY --chmod=755 docker-entrypoint.sh /entrypoint.sh
+
+COPY --chmod=755 ${BUILD_DIR}/uclipboard-${PLATFORM} ./uclipboard
 
 ENTRYPOINT ["/entrypoint.sh"]
