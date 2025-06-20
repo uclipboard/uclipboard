@@ -125,7 +125,8 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 
 		// save clipboard record to db
 		newClipboardRecord := model.NewClipboardWithDefault()
-		newClipboardRecord.Content = fmt.Sprintf("%s@%d", fileMetadata.FileName, fileId) // add fileid to clipboard record
+		// file format clipboard content should be readable, unique
+		newClipboardRecord.Content = fmt.Sprintf("%s@%d?access_token=%s", fileMetadata.FileName, fileId, fileMetadata.Token) // add fileid to clipboard record
 		newClipboardRecord.Hostname = hostname
 		newClipboardRecord.ContentType = "binary"
 		logger.Tracef("Upload binary file clipboard record: %v", newClipboardRecord)

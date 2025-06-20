@@ -37,7 +37,7 @@ func UrlUploadApi(c *UContext) string {
 }
 
 func UrlDownloadApi(c *UContext, fileName string) string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_DownloadPure, fileName)
+	return fmt.Sprintf("%s/%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion1, Api_DownloadPure, fileName)
 }
 
 func UrlWsApi(c *UContext) (string, http.Header) {
