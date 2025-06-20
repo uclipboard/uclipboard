@@ -23,6 +23,7 @@ func main() {
 	}
 	if conf.Runtime.ShowHelp {
 		fmt.Println("uclipboard version: ", model.Version)
+		fmt.Println("Tip: Run `uclipboard` with no arguments to read data from stdin.")
 		fmt.Println("Usage of uclipboard:")
 		flag.PrintDefaults()
 		os.Exit(0)
