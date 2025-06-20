@@ -49,7 +49,9 @@ func UploadFile(filePath string, client *HeaderHttpClient, c *model.UContext, lo
 		logger.Fatalf("close bodyWriter error: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", model.UrlUploadApi(c), bodyBuf)
+	urlApi := model.UrlUploadApi(c)
+	logger.Debugf("upload file url: %s", urlApi)
+	req, err := http.NewRequest("POST", urlApi, bodyBuf)
 	if err != nil {
 		logger.Fatalf("NewRequest error: %v", err)
 	}

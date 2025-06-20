@@ -30,7 +30,7 @@ func UrlPullApi(c *UContext) string {
 func UrlUploadApi(c *UContext) string {
 	str := fmt.Sprintf("%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Upload)
 	if c.Runtime.UploadFileLifetime != 0 {
-		str += fmt.Sprintf("&lifetime=%d", c.Runtime.UploadFileLifetime)
+		str += fmt.Sprintf("?lifetime=%d", c.Runtime.UploadFileLifetime)
 	}
 	return str
 }
