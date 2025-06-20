@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	"net/url"
 )
 
 const (
@@ -14,42 +14,71 @@ const (
 	Api_Pull                    = "pull"
 	Api_History                 = "history"
 	Api_Upload                  = "upload"
-	Api_Download                = "download/*filename"
 	Api_DownloadPure            = "download"
+	Api_Download                = Api_DownloadPure + "/*filename"
 	Api_WS                      = "ws"
-	Api_DownloadWithAccessToken = "download/*filename"
+	Api_DownloadWithAccessToken = Api_Download
 )
 
 func UrlPushApi(c *UContext) string {
-	return fmt.Sprintf("%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Push)
+	u, err := url.Parse(c.Client.Connect.Url)
+	if err != nil {
+		panic(err)
+	}
+	u = u.JoinPath(ApiPrefix, ApiVersion, Api_Push)
+	return u.String()
 }
 
 func UrlPullApi(c *UContext) string {
-	return fmt.Sprintf("%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Pull)
+	u, err := url.Parse(c.Client.Connect.Url)
+	if err != nil {
+		panic(err)
+	}
+	u = u.JoinPath(ApiPrefix, ApiVersion, Api_Pull)
+	return u.String()
 }
 
 func UrlUploadApi(c *UContext) string {
-	str := fmt.Sprintf("%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_Upload)
-	if c.Runtime.UploadFileLifetime != 0 {
-		str += fmt.Sprintf("?lifetime=%d", c.Runtime.UploadFileLifetime)
+	u, err := url.Parse(c.Client.Connect.Url)
+	if err != nil {
+		panic(err)
 	}
-	return str
+	u = u.JoinPath(ApiPrefix, ApiVersion, Api_Upload)
+	if c.Runtime.UploadFileLifetime != 0 {
+		q := u.Query()
+		q.Set("lifetime", fmt.Sprintf("%d", c.Runtime.UploadFileLifetime))
+		u.RawQuery = q.Encode()
+	}
+	return u.String()
 }
 
 func UrlDownloadApi(c *UContext, fileName string) string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion1, Api_DownloadPure, fileName)
+	u, err := url.Parse(c.Client.Connect.Url)
+	if err != nil {
+		panic(err)
+	}
+	u = u.JoinPath(ApiPrefix, ApiVersion1, Api_DownloadPure, fileName)
+	return u.String()
 }
 
 func UrlWsApi(c *UContext) (string, http.Header) {
-	wsUrl := c.Client.Connect.Url
-	if strings.HasPrefix(wsUrl, "http://") {
-		wsUrl = strings.Replace(wsUrl, "http://", "ws://", 1)
-	} else if strings.HasPrefix(wsUrl, "https://") {
-		wsUrl = strings.Replace(wsUrl, "https://", "wss://", 1)
-	} else {
+	u, err := url.Parse(c.Client.Connect.Url)
+	if err != nil {
+		panic(err)
+	}
+
+	// Modify the scheme directly for clarity and safety.
+	switch u.Scheme {
+	case "http":
+		u.Scheme = "ws"
+	case "https":
+		u.Scheme = "wss"
+	default:
 		panic("url must start with http:// or https://")
 	}
-	return fmt.Sprintf("%s/%s/%s/%s", wsUrl, ApiPrefix, ApiVersion1, Api_WS), http.Header{
+
+	u = u.JoinPath(ApiPrefix, ApiVersion1, Api_WS)
+	return u.String(), http.Header{
 		"token": []string{c.Runtime.TokenEncrypt},
 	}
 }

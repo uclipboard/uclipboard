@@ -20,19 +20,6 @@ var (
 	randMutex   = sync.Mutex{}
 )
 
-func RandDecIntString(size int) string {
-	randMutex.Lock()
-	defer randMutex.Unlock()
-	var sb strings.Builder
-	sb.Grow(size) // Pre-allocate memory to avoid reallocations
-
-	for i := 0; i < size; i++ {
-		sb.WriteByte(byte(randGen.Intn(10) + '0'))
-	}
-
-	return sb.String()
-}
-
 func RandString(size int) string {
 	randMutex.Lock()
 	defer randMutex.Unlock()

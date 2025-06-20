@@ -62,7 +62,7 @@ func Instant(c *model.UContext) {
 		UploadFile(c.Runtime.Upload, client, c, logger)
 
 	} else if c.Runtime.Latest || c.Runtime.Download != "" {
-		logger.Debugf("download binary file. c.Flags.Latest:%t, c.Flags.Download:%s", c.Runtime.Latest, c.Runtime.Download)
+		logger.Debugf("download binary file. c.Flags.Latest: %t, c.Flags.Download: %s", c.Runtime.Latest, c.Runtime.Download)
 
 		var fileName string
 		if c.Runtime.Latest {
