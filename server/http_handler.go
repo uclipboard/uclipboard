@@ -226,16 +226,20 @@ func HandlerDownloadWithAccessToken(conf *model.UContext) gin.HandlerFunc {
 			// error already handled in getDownloadFileMetadata
 			return
 		}
-		// check access token
-		token := ctx.Query("access_token")
-		if token == "" {
-			logger.Debug("access_token is empty")
-			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("access_token is required", nil))
-			return
-		} else if token != metadata.Token {
-			logger.Debugf("access_token is invalid: %s <> %s", token, metadata.Token)
-			ctx.JSON(http.StatusForbidden, model.NewDefaultServeRes("access_token is invalid", nil))
-			return
+		// get token from header
+		token := ctx.GetHeader("token")
+		if token != conf.Runtime.TokenEncrypt {
+			// check accessToken
+			accessToken := ctx.Query("access_token")
+			if accessToken == "" {
+				logger.Debug("access_token is empty")
+				ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("access_token is required", nil))
+				return
+			} else if accessToken != metadata.Token {
+				logger.Debugf("access_token is invalid: %s <> %s", accessToken, metadata.Token)
+				ctx.JSON(http.StatusForbidden, model.NewDefaultServeRes("access_token is invalid", nil))
+				return
+			}
 		}
 		fullPath := path.Join(conf.Server.Store.TmpPath, metadata.TmpPath)
 		logger.Debugf("Required file full path: %s", fullPath)
