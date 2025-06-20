@@ -53,6 +53,13 @@ func ginLoggerMiddleware() gin.HandlerFunc {
 func ginAuthMiddleware(uctx *model.UContext) gin.HandlerFunc {
 	logger := model.NewModuleLogger("auth")
 	return func(ctx *gin.Context) {
+		// if request url is /api/v1/download, we should not check token
+		downloadPath := fmt.Sprintf("/%s/%s/%s", model.ApiPrefix, model.ApiVersion1, model.Api_DownloadWithAccessToken)
+		if strings.HasPrefix(ctx.FullPath(), downloadPath) {
+			logger.Trace("Request is for download with access token, skipping token check")
+			ctx.Next()
+			return
+		}
 		token := ctx.Query("token")
 		if token == "" {
 			logger.Trace("No token in query, trying to get from header")
@@ -154,6 +161,7 @@ func Run(c *model.UContext) {
 	{
 		v1 := api.Group(model.ApiVersion1)
 		v1.GET(model.Api_WS, HandlerWebSocket(c))
+		v1.GET(model.Api_DownloadWithAccessToken, HandlerDownloadWithAccessToken(c))
 	}
 	logger.Infof("Server is running on :%d", c.Server.Api.Port)
 	if err := r.Run(":" + strconv.Itoa(c.Server.Api.Port)); err != nil {

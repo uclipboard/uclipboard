@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/uclipboard/uclipboard/model"
 	"github.com/uclipboard/uclipboard/server/core"
 )
@@ -136,7 +137,7 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 			Id:       fileId,
 			Name:     fileMetadata.FileName,
 			LifeTime: lifetimeSecs,
-			Token:  fileMetadata.Token,
+			Token:    fileMetadata.Token,
 		}
 		responseData, err := json.Marshal(fmr)
 		if err != nil {
@@ -148,55 +149,93 @@ func HandlerUpload(uctx *model.UContext) gin.HandlerFunc {
 	}
 }
 
+func getDownloadFileMetadata(logger *logrus.Entry, ctx *gin.Context) (*model.FileMetadata, error) {
+	logger.Trace("into HandlerDownload")
+	logger.Tracef("request download raw filename paramater: %v", ctx.Param("filename"))
+
+	fileName := ""
+	if ctx.Param("filename") != "" {
+		fileName = ctx.Param("filename")[1:] // skip '/' in '/xxx'
+	}
+	metadata := model.NewFileMetadataWithDefault()
+	if fileName == "" {
+		// download latest binary file
+		if err := core.GetFileMetadataLatestRecord(metadata); err != nil {
+			if err == sql.ErrNoRows {
+				ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("there are no files in server.", nil))
+				return nil, err
+			}
+			core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataLatestRecord error: %v", err)
+			return nil, err
+		}
+
+		logger.Debugf("Get the latest file metadata record: %v", metadata)
+	} else {
+		if strings.Contains(fileName, "@") {
+			logger.Trace("download file by id")
+			// get the id number starts after @
+			id := core.ExtractFileId(fileName, "@")
+			if id == 0 {
+				core.ServerInternalErrorLogEcho(ctx, logger, "Wrong file id format")
+				return nil, fmt.Errorf("wrong file id format")
+			}
+			metadata.Id = id
+			logger.Debugf("download by id: %v", metadata.Id)
+		} else {
+			// download by name
+			metadata.FileName = fileName
+			logger.Debugf("download by name: %s", metadata.FileName)
+		}
+
+		err := core.GetFileMetadataRecordByIdOrName(metadata)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("specified file not found or has expired.", nil))
+				return nil, err
+			}
+			core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataRecordByIdOrName error: %v", err)
+			return nil, err
+		}
+	}
+	return metadata, nil
+}
+
 func HandlerDownload(conf *model.UContext) gin.HandlerFunc {
 	logger := model.NewModuleLogger("HandlerDownload")
 
 	return func(ctx *gin.Context) {
-		logger.Trace("into HandlerDownload")
-		logger.Tracef("request download raw filename paramater: %v", ctx.Param("filename"))
-
-		fileName := ctx.Param("filename")[1:] // skip '/' in '/xxx'
-		metadata := model.NewFileMetadataWithDefault()
-		if fileName == "" {
-			// download latest binary file
-			if err := core.GetFileMetadataLatestRecord(metadata); err != nil {
-				if err == sql.ErrNoRows {
-					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("there are no files in server.", nil))
-					return
-				}
-				core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataLatestRecord error: %v", err)
-				return
-			}
-
-			logger.Debugf("Get the latest file metadata record: %v", metadata)
-		} else {
-			if strings.Contains(fileName, "@") {
-				logger.Trace("download file by id")
-				// get the id number starts after @
-				id := core.ExtractFileId(fileName, "@")
-				if id == 0 {
-					core.ServerInternalErrorLogEcho(ctx, logger, "Wrong file id format")
-					return
-				}
-				metadata.Id = id
-				logger.Debugf("download by id: %v", metadata.Id)
-			} else {
-				// download by name
-				metadata.FileName = fileName
-				logger.Debugf("download by name: %s", metadata.FileName)
-			}
-
-			err := core.GetFileMetadataRecordByIdOrName(metadata)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					ctx.JSON(http.StatusNotFound, model.NewDefaultServeRes("specified file not found or has expired.", nil))
-					return
-				}
-				core.ServerInternalErrorLogEcho(ctx, logger, "GetFileMetadataRecordByIdOrName error: %v", err)
-				return
-			}
+		metadata, err := getDownloadFileMetadata(logger, ctx)
+		if err != nil {
+			// error already handled in getDownloadFileMetadata
+			return
 		}
+		fullPath := path.Join(conf.Server.Store.TmpPath, metadata.TmpPath)
+		logger.Debugf("Required file full path: %s", fullPath)
+		// set file name in header
+		ctx.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, metadata.FileName))
+		ctx.File(fullPath)
+	}
+}
 
+func HandlerDownloadWithAccessToken(conf *model.UContext) gin.HandlerFunc {
+	logger := model.NewModuleLogger("HandlerDownloadWithAccessToken")
+	return func(ctx *gin.Context) {
+		metadata, err := getDownloadFileMetadata(logger, ctx)
+		if err != nil {
+			// error already handled in getDownloadFileMetadata
+			return
+		}
+		// check access token
+		token := ctx.Query("access_token")
+		if token == "" {
+			logger.Debug("access_token is empty")
+			ctx.JSON(http.StatusBadRequest, model.NewDefaultServeRes("access_token is required", nil))
+			return
+		} else if token != metadata.Token {
+			logger.Debugf("access_token is invalid: %s <> %s", token, metadata.Token)
+			ctx.JSON(http.StatusForbidden, model.NewDefaultServeRes("access_token is invalid", nil))
+			return
+		}
 		fullPath := path.Join(conf.Server.Store.TmpPath, metadata.TmpPath)
 		logger.Debugf("Required file full path: %s", fullPath)
 		// set file name in header

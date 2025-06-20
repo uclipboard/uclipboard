@@ -7,16 +7,17 @@ import (
 )
 
 const (
-	ApiPrefix        = "api"
-	ApiVersion       = "v0"
-	ApiVersion1      = "v1"
-	Api_Push         = "push"
-	Api_Pull         = "pull"
-	Api_History      = "history"
-	Api_Upload       = "upload"
-	Api_Download     = "download/*filename"
-	Api_DownloadPure = "download"
-	Api_WS           = "ws"
+	ApiPrefix                   = "api"
+	ApiVersion                  = "v0"
+	ApiVersion1                 = "v1"
+	Api_Push                    = "push"
+	Api_Pull                    = "pull"
+	Api_History                 = "history"
+	Api_Upload                  = "upload"
+	Api_Download                = "download/*filename"
+	Api_DownloadPure            = "download"
+	Api_WS                      = "ws"
+	Api_DownloadWithAccessToken = "download/*filename"
 )
 
 func UrlPushApi(c *UContext) string {
@@ -39,7 +40,7 @@ func UrlDownloadApi(c *UContext, fileName string) string {
 	return fmt.Sprintf("%s/%s/%s/%s/%s", c.Client.Connect.Url, ApiPrefix, ApiVersion, Api_DownloadPure, fileName)
 }
 
-func UrlWsApi(c *UContext) (string,http.Header) {
+func UrlWsApi(c *UContext) (string, http.Header) {
 	wsUrl := c.Client.Connect.Url
 	if strings.HasPrefix(wsUrl, "http://") {
 		wsUrl = strings.Replace(wsUrl, "http://", "ws://", 1)
